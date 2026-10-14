@@ -287,7 +287,7 @@ export default function GamePage() {
         <GameOverScreen
           stats={state.stats}
           floor={state.floor}
-          onRetry={() => window.location.href = '/draft'}
+          onRetry={() => router.push('/draft')}
         />
       )}
 
