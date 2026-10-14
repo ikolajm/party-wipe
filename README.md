@@ -6,11 +6,13 @@ A D&D 5e roguelike survival game. Build a party of 4, descend into procedurally 
 
 Zone-based combat (melee / ranged / far) with 5e-lite rules. Turn-based initiative, d20 attack rolls, spell saves, status effects. Rooms scale in difficulty until your party wipes. Score tracks rooms cleared, damage dealt, characters lost, and more.
 
-No grid. No sprites. Text, icons, and tokens — with CSS/Motion/Three.js status effect animations in combat that show the design craft.
+No grid. No sprites. Text, icons, and tokens — with CSS and Motion status effect animations in combat that show the design craft.
 
 ## Status
 
-V1 is feature-complete and plays end to end — combat engine, full UI, polish, and balance are all done. Remaining for ship: Vercel deploy, demo video, case study writeup. See [SPRINT.md](SPRINT.md) for the detailed build state.
+V1 is feature-complete and plays end to end — combat engine, full UI, polish, and balance are all done. Development is paused.
+
+Play it at https://blue-sand-074984610.3.azurestaticapps.net. The [developer page](https://blue-sand-074984610.3.azurestaticapps.net/dev/) jumps to any phase, so every screen can be seen without playing a full run. See [SPRINT.md](SPRINT.md) for the detailed build state.
 
 ## Setup
 
