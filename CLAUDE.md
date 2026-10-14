@@ -103,7 +103,7 @@ A floating **HUD overlay layer** sits on top regardless of phase: floor/room chi
 
 ## Design System
 
-Generated via the jmi-hub (Loom) pipeline. Brand: amber/gold primary (#DAA520), Cinzel headings, JetBrains Mono body, dark mode default.
+Generated via the jmi-hub (Loom) pipeline. Brand: amber/gold primary (#DAA520), secondary #2e5bcc (auto-derived), accent #29d1a1 (teal). Cinzel headings, JetBrains Mono body, dark mode default. Sharp edges, compact density, flat shadows.
 
 - Tokens in `frontend/src/tokens.css` — use `var(--space-*)`, `var(--primary)`, `var(--font-heading)`, etc.
 - Typography classes: `text-display-*`, `text-title-*`, `text-body-*`, `text-label-*`
