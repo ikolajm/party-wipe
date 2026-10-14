@@ -253,7 +253,7 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
               <h4 className="text-label-md uppercase tracking-widest text-on-surface-variant font-semibold">
                 {isTwoHanded ? 'Both Hands' : 'Main Hand'}
               </h4>
-              <EquipmentCard slot="weapon" iconName={getWeaponIcon(weapon.index)}
+              <EquipmentCard iconName={getWeaponIcon(weapon.index)}
                 label={weapon.name} stats={`${weapon.damage} ${weapon.damageType}`} />
               {weapon.onHit && (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-component bg-primary/10 border border-primary/20">
@@ -268,7 +268,7 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
               <div className="flex flex-col gap-1">
                 <h4 className="text-label-md uppercase tracking-widest text-on-surface-variant font-semibold">Off Hand</h4>
                 {char.equipment.shield ? (
-                  <EquipmentCard slot="shield" iconName="shield" label="Shield" stats="+2 AC" acValue={2} />
+                  <EquipmentCard iconName="shield" label="Shield" stats="+2 AC" acValue={2} />
                 ) : (
                   <div className="flex items-center justify-center h-12 rounded-component border border-dashed border-outline-subtle bg-surface-1">
                     <span className="text-label-sm text-outline-subtle uppercase tracking-widest">Empty</span>
@@ -283,7 +283,7 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
             <div className="flex flex-col gap-1">
               <h4 className="text-label-md uppercase tracking-widest text-on-surface-variant font-semibold">Body</h4>
               {char.equipment.armor ? (
-                <EquipmentCard slot="armor" iconName="chain-mail"
+                <EquipmentCard iconName="chain-mail"
                   label={char.equipment.armor.name}
                   stats={`AC ${char.equipment.armor.acBase}${char.equipment.armor.acDexCap === 0 ? '' : char.equipment.armor.acDexCap ? ` + DEX (max ${char.equipment.armor.acDexCap})` : ' + DEX'}`} />
               ) : (

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { GameProvider, useGame } from '@/components/providers/GameProvider';
 import { useCombat } from '@/hooks/useCombat';
 import { classBuilds } from '@/data/classes';
@@ -34,6 +35,7 @@ const PHASES: { id: GamePhase | 'room-preview-boss'; label: string }[] = [
 ];
 
 function DevHarness() {
+  const router = useRouter();
   const { state, initParty, setPhase, setRoom, setCombat, addLog, updateCharacter, updateStats, setFloorModifier } = useGame();
   const [activePhase, setActivePhase] = useState<string>('room-preview');
   const [inspectId, setInspectId] = useState<string | null>(null);
@@ -309,7 +311,7 @@ function DevHarness() {
           <GameOverScreen
             stats={state.stats}
             floor={state.floor}
-            onRetry={() => window.location.href = '/draft'}
+            onRetry={() => router.push('/draft')}
           />
         )}
       </div>

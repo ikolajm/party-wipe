@@ -3,10 +3,8 @@
 import { cn } from '@/components/atoms/cn';
 import { GameIcon } from '@/components/atoms/GameIcon';
 import { AcShield } from './AcShield';
-import { Shield, Swords, CircleDot } from 'lucide-react';
 
 type EquipmentCardProps = {
-  slot: 'weapon' | 'armor' | 'shield' | 'defense';
   iconName: string;
   label: string;
   stats?: string;
@@ -15,16 +13,7 @@ type EquipmentCardProps = {
   className?: string;
 };
 
-const SLOT_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
-  weapon: { label: 'Main Hand', icon: <Swords className="size-3" /> },
-  armor: { label: 'Body', icon: <Shield className="size-3" /> },
-  shield: { label: 'Off Hand', icon: <Shield className="size-3" /> },
-  defense: { label: 'Defense', icon: <CircleDot className="size-3" /> },
-};
-
-export function EquipmentCard({ slot, iconName, label, stats, note, acValue, className }: EquipmentCardProps) {
-  const slotInfo = SLOT_LABELS[slot] || SLOT_LABELS.weapon;
-
+export function EquipmentCard({ iconName, label, stats, note, acValue, className }: EquipmentCardProps) {
   return (
     <div className={cn(
       'flex items-center gap-3 p-3 rounded-component bg-surface-2',

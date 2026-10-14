@@ -8,7 +8,7 @@
  * Run: node scripts/generate-icon-registry.mjs
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 
 const ASSETS_DIR = join(import.meta.dirname, '../src/assets');
@@ -64,7 +64,7 @@ for (const category of CATEGORIES) {
       const key = toIconKey(category, file);
       registry[key] = { viewBox, paths };
     }
-  } catch (e) {
+  } catch {
     // Directory might not exist, skip
   }
 }

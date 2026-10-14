@@ -53,13 +53,13 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant, size = 'md', asChild = false, iconOnly = false, leadingIcon, trailingIcon, className, children, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
-    const resolvedSize = iconOnly ? `icon-${size}` : size;
+    const resolvedSize = iconOnly ? (`icon-${size}` as const) : size;
     const iconCls = buttonIconSize[size];
 
     return (
       <Comp
         ref={ref}
-        className={cn(buttonVariants({ variant, size: resolvedSize as any }), className)}
+        className={cn(buttonVariants({ variant, size: resolvedSize }), className)}
         {...props}
       >
         {!iconOnly && leadingIcon && <span className={cn('shrink-0 [&>svg]:size-full', iconCls)}>{leadingIcon}</span>}
