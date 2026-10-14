@@ -4,11 +4,11 @@
 
 A D&D 5e roguelike survival game. Solo party of 4 characters, zone-based combat, procedural dungeon rooms, loot, leveling. Game ends on TPK. Score tracks how far you got.
 
-Built as pipeline proof #2 — dark/fantasy brand generated via the jmi-hub design system pipeline. Status effect animations (CSS/Motion/Three.js) on combat tokens are the design-chops showcase.
+Built as pipeline proof #2 — dark/fantasy brand generated via the jmi-hub design system pipeline. Status effect animations (CSS and Motion) on combat tokens are the design-chops showcase.
 
 ## Status
 
-V1 is feature-complete and plays end to end — engine, UI, polish, and balance are done. Remaining for ship: Vercel deploy, demo video, case study writeup. **`SPRINT.md` is the source of truth** for what's built and what's left.
+V1 is feature-complete and plays end to end — engine, UI, polish, and balance are done. Development is paused. The game runs on an Azure Static Web App at https://blue-sand-074984610.3.azurestaticapps.net, deployed by the workflow in `.github/workflows/` on every push to `master`. **`SPRINT.md` is the source of truth** for what's built and what's left.
 
 ## Project Structure
 
@@ -42,18 +42,16 @@ party-wipe/
     ├── scripts/
     │   └── generate-game-data.mjs  ← SRD complete-data → typed game data files
     └── src/
-        ├── app/            ← Pages: page.tsx (title), draft/, game/, dev/, design-system/
+        ├── app/            ← Pages: page.tsx (title), draft/, game/, dev/
         ├── assets/         ← Source SVGs (class, monster, item, status, spell-school, room, ui, loot)
         ├── components/
-        │   ├── atoms/      ← 55 generated design-system atoms + GameIcon, Logo
-        │   ├── molecules/  ← 17 game-specific composed components (StatRow, HealthBar, ZoneToken, …)
+        │   ├── atoms/      ← Generated design-system atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
+        │   ├── molecules/  ← Game-specific composed components (StatRow, HealthBar, ZoneToken, …)
         │   ├── game/       ← Screen + HUD components (ZoneLayout, ActionBar, RoomPreview, …)
-        │   ├── playground/ ← Design-system playground (ColorsView, TypographyView)
         │   └── providers/  ← GameProvider (game state), ThemeProvider
-        ├── config/         ← Runtime config (colors.json, typography.json, standards.json)
         ├── data/           ← Game data + pure logic (types, classes, generators, status-effects, …)
         ├── hooks/          ← Combat orchestration (useCombat + resolvers/enemy-turn/modifiers, useRest)
-        ├── stories/        ← Atom component stories + registry
+        ├── game-tokens.css ← Game color layer over the design system tokens
         └── tokens.css      ← Design system tokens
 ```
 
@@ -64,7 +62,7 @@ All game logic lives in `frontend/src/` — `data/` (pure functions, types, gene
 Two stages, both run from `server/` and only needed when regenerating game data:
 
 1. **Merge then seed** — mergers normalize reference tables across the 2014/2024 SRD editions; seeders transform raw SRD JSON into `complete-data/` with consistent types. Run via `npm run merge-*` / `npm run seed-*` (see `server/package.json`).
-2. **Generate game data** — `frontend/scripts/generate-game-data.mjs` reads `complete-data/` and emits the typed game files the game imports: `spell-meta.ts`, `feature-meta.ts`, `monster-pool.ts`, `loot-pool.ts`.
+2. **Generate game data** — `frontend/scripts/generate-game-data.mjs` reads `complete-data/` and emits the typed game files the game imports: `spell-meta.ts`, `feature-meta.ts`, `monster-pool.ts`. Loot is not generated; it comes from the curated `v1-roster.ts` through `loot-generator.ts`.
 
 The committed generated files in `frontend/src/data/` are the read path for the game. The pipeline is only re-run when the SRD subset changes.
 
@@ -81,7 +79,7 @@ See `docs/V1-SPEC.md` for the game design spec, `docs/ENGINE-RULES.md` for shipp
 - Level cap 10
 - Solo play only (multiplayer is v2)
 - Text/icon/token UI — no sprites, no character-specific art
-- CSS/Motion/Three.js status effect animations on combat tokens ARE in scope
+- CSS and Motion status effect animations on combat tokens ARE in scope
 - Damage types + resistances/immunities tracked; cantrip scaling tracked; concentration tracked
 
 ## Data Source
@@ -107,7 +105,7 @@ Generated via the jmi-hub (Loom) pipeline. Brand: amber/gold primary (#DAA520), 
 
 - Tokens in `frontend/src/tokens.css` — use `var(--space-*)`, `var(--primary)`, `var(--font-heading)`, etc.
 - Typography classes: `text-display-*`, `text-title-*`, `text-body-*`, `text-label-*`
-- 55 generated atoms in `components/atoms/`; 17 game-specific molecules in `components/molecules/` (project-owned, never regenerated)
+- Generated atoms in `components/atoms/`, kept only where the game uses them; game-specific molecules in `components/molecules/` (project-owned, never regenerated)
 - Game-specific color layer (`data/game-colors.ts`) — damage types, spell schools, action types, rarity, status, resources, surfaces — extends the generated tokens
 - Hybrid icon system — generated `GameIcon` atom over a mix of pixel-art and Lucide source SVGs in `assets/` (class, monster, status, spell-school, room, item, loot, ui)
 
