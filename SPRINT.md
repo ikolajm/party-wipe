@@ -15,8 +15,8 @@
 
 ### Design System
 - [x] Brand: amber/gold, Cinzel/JetBrains Mono, dark mode
-- [x] 55 atoms, tokens.css, Tailwind utilities throughout
-- [x] 17 molecules: DetailItem, FeatureItem, SpellListItem, AttackLine, EquipmentCard, CreatureHeader, StatRow, ResistanceRow, HealthBar, AcShield, SpellSlotPips, DamageIcon, ActionShape, ResourceBar, StatusStack, ZoneToken
+- [x] Generated atoms (Accordion, Button, Sheet, Tabs), tokens.css, Tailwind utilities throughout
+- [x] Molecules: DetailItem, FeatureItem, SpellListItem, AttackLine, EquipmentCard, CreatureHeader, StatRow, ResistanceRow, HealthBar, AcShield, SpellSlotPips, DamageIcon, ActionShape, ResourceBar, StatusStack, ZoneToken, ConditionCard, ConditionList
 - [x] Game color system (damage, schools, actions, rarity, status, resources, surfaces)
 - [x] Icon system: 6 class, 12 monster types, 8 status, 8 spell schools, 5 room types, 12 items, 2 loot, 5 UI
 
@@ -186,8 +186,8 @@
 - [x] Cross-zone melee attacks prevented (reach-aware action selection)
 
 ### Ship
-- [ ] Deploy (Vercel)
-- [ ] Case study writeup
+- [x] Deploy (Azure Static Web App, https://blue-sand-074984610.3.azurestaticapps.net)
+- [x] Case study writeup (portfolio_site_2026)
 - [ ] Demo video/recording
 
 ---
@@ -268,9 +268,9 @@ frontend/src/
 │   │   ├── LevelUpScreen.tsx — Motion-powered staggered level-up reveals
 │   │   ├── RestScreen.tsx    — Motion-powered rest choices with tradeoff coloring
 │   │   └── GameOverScreen.tsx — Motion-powered game over with run stats + "Party: Wiped."
-│   ├── molecules/            — StatRow (modifier-primary), ResistanceRow (tactical grid), + 14 others
-│   ├── atoms/                — 55 design system atoms + GameIcon, Logo
+│   ├── molecules/            — StatRow (modifier-primary), ResistanceRow (tactical grid), + the rest
+│   ├── atoms/                — Generated atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
 │   └── providers/            — GameProvider (state + setFloorModifier), ThemeProvider
 └── scripts/
-    └── generate-game-data.mjs — SRD → typed TS (spells, features, monsters, loot)
+    └── generate-game-data.mjs — SRD → typed TS (spells, features, monsters)
 ```
