@@ -31,8 +31,8 @@ async function take(page: Page, mark: Mark) {
   mark('combat')
   await pause(HOLD.beat)
   mark('turn')
-  await pause(HOLD.read)
 
+  // The glide to the boss plays over the turn banner, so the camera never sits still.
   mark('inspect')
   await clickOn(page, boss)
   await page.getByRole('dialog').waitFor()

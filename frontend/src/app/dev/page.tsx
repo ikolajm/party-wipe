@@ -330,6 +330,7 @@ function DevHarness() {
 
       {live && combat.isPlayerTurn && combat.activeCharacter && (
         <ActionBar
+          key={combat.activeCharacter.id}
           onAttack={combat.handleAttack}
           onCast={combat.handleCast}
           onDefend={combat.handleDefend}

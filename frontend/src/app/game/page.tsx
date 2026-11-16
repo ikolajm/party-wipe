@@ -22,7 +22,7 @@ import { GameOverScreen } from '@/components/game/GameOverScreen';
 import { GlobalFeedbackOverlay } from '@/components/game/feedback';
 import { PhaseBanner } from '@/components/game/PhaseBanner';
 import { VictoryOverlay } from '@/components/game/VictoryOverlay';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import type { Character, Enemy } from '@/data/game-types';
 import type { LootItem } from '@/data/loot-generator';
 
@@ -266,16 +266,9 @@ export default function GamePage() {
         {victoryXp !== null && <VictoryOverlay xpGained={victoryXp} />}
       </AnimatePresence>
 
-      <AnimatePresence>
       {live && combat.isPlayerTurn && combat.activeCharacter && (
-        <motion.div
-          key="action-bar"
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 40, opacity: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-        >
         <ActionBar
+          key={combat.activeCharacter.id}
           onAttack={combat.handleAttack}
           onCast={combat.handleCast}
           onDefend={combat.handleDefend}
@@ -284,9 +277,7 @@ export default function GamePage() {
           onMove={combat.handleMove}
           onEndTurn={() => combat.advanceTurn()}
         />
-        </motion.div>
       )}
-      </AnimatePresence>
 
       <InspectSheet inspecting={inspecting} onClose={closeInspect} />
       {overlay}
