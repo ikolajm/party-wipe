@@ -8,7 +8,7 @@ import {
   logHeal, logConditionApplied, logConditionResisted, logConditionFree,
   logDot, logMove, logBoundaryCross, logDeath,
 } from '@/data/combat-log';
-import { zoneLabel } from '@/data/zones';
+import { zoneLabel, getBoundaryKey } from '@/data/zones';
 import {
   shouldSkipTurn, SKIP_TURN_CONDITIONS, resolveEndOfTurnSaves, tickEffects,
   removeBySource, applyCondition, makeEffectId, type ActiveEffect,
@@ -22,12 +22,6 @@ import { emitCombatFeedback, delay, CAST_CHARGE_MS, type DamageQualifier } from 
 import { getConsumable } from '@/data/v1-roster';
 import type { Zone, CombatState, Enemy, BoundaryKey, TurnResources, Character } from '@/data/game-types';
 
-function getBoundaryKey(from: Zone, to: Zone): BoundaryKey | null {
-  const low = Math.min(from, to);
-  const high = Math.max(from, to);
-  if (high - low !== 1) return null;
-  return `${low}|${high}` as BoundaryKey;
-}
 
 /** Fixed spellcasting context for scroll casts — anyone can read a scroll,
  *  at a flat DC, with no spell slot spent (the scroll is the cost). */

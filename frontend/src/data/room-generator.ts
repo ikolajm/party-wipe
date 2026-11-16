@@ -4,7 +4,7 @@
 
 import { roomTypeWeights, BOSS_INTERVAL } from './encounter-config';
 import type { Room, RoomType } from './game-types';
-import { random } from './rng';
+import { random, pick } from './rng';
 
 const flavorTexts: Record<RoomType, string[][]> = {
   combat: [
@@ -34,10 +34,6 @@ const flavorTexts: Record<RoomType, string[][]> = {
   ],
 };
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(random() * arr.length)];
-}
-
 function rollWeightedRoomType(): RoomType {
   const entries = Object.entries(roomTypeWeights) as [RoomType, number][];
   const totalWeight = entries.reduce((sum, [, w]) => sum + w, 0);
@@ -63,7 +59,7 @@ export function generateRoom(floor: number, roomNumber: number): Room {
     type,
     floor,
     roomNumber,
-    flavorText: pickRandom(flavorPool),
+    flavorText: pick(flavorPool),
     completed: false,
   };
 }

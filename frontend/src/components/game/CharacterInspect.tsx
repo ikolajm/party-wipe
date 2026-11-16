@@ -56,14 +56,14 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
   const xpProgress = xpNext ? Math.min(1, (xpCurrent - xpPrev) / (xpNext - xpPrev)) : 1;
 
   const allFeatures = aggregateFeatures(char.classIndex, char.level);
-  const hasCasting = !!char.spellcasting;
+  const { spellcasting } = char;
 
   const hasItems = !isDraft && char.consumables.some(c => c.quantity > 0);
   const isTwoHanded = weapon.properties.includes('two-handed');
   const tabs = [
     { id: 'stats', label: 'Stats' },
     { id: 'combat', label: 'Combat' },
-    ...(hasCasting ? [{ id: 'spells', label: 'Spells' }] : []),
+    ...(spellcasting ? [{ id: 'spells', label: 'Spells' }] : []),
     ...(hasItems ? [{ id: 'items', label: 'Items' }] : []),
     { id: 'gear', label: 'Gear' },
     ...(isDraft ? [{ id: 'progression', label: 'Progression' }] : []),
@@ -81,10 +81,10 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
             <AcShield value={char.ac} size="sm" />
           </div>
           {/* Spell slots (casters only) */}
-          {hasCasting && (
+          {spellcasting && (
             <div className="flex items-center gap-2">
               {/* <span className="text-label-sm text-on-surface-variant">Spell Slots</span> */}
-              <SpellSlotPips total={char.spellcasting!.slotsTotal} used={char.spellcasting!.slotsUsed} size="md" />
+              <SpellSlotPips total={spellcasting.slotsTotal} used={spellcasting.slotsUsed} size="md" />
             </div>
           )}
           {/* Level + XP bar — combat only */}
@@ -126,7 +126,7 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
               </div>
             </div>
 
-            {hasCasting && (
+            {spellcasting && (
               <>
               <div className="h-px bg-primary/30" />
               <div className="flex flex-col gap-2">
@@ -134,15 +134,15 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col items-center gap-1 p-3 rounded-component bg-surface-2">
                     <span className="text-label-sm uppercase tracking-widest text-on-surface-variant">Ability</span>
-                    <span className="text-body-md font-bold text-primary">{char.spellcasting!.ability}</span>
+                    <span className="text-body-md font-bold text-primary">{spellcasting.ability}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 p-3 rounded-component bg-surface-2">
                     <span className="text-label-sm uppercase tracking-widest text-on-surface-variant">Save DC</span>
-                    <span className="text-body-md font-bold text-on-surface">{char.spellcasting!.spellSaveDC}</span>
+                    <span className="text-body-md font-bold text-on-surface">{spellcasting.spellSaveDC}</span>
                   </div>
                   <div className="flex flex-col items-center gap-1 p-3 rounded-component bg-surface-2">
                     <span className="text-label-sm uppercase tracking-widest text-on-surface-variant">Attack</span>
-                    <span className="text-body-md font-bold text-on-surface">+{char.spellcasting!.spellAttackBonus}</span>
+                    <span className="text-body-md font-bold text-on-surface">+{spellcasting.spellAttackBonus}</span>
                   </div>
                 </div>
               </div>
@@ -227,18 +227,18 @@ export function CharacterInspect({ char, mode = 'combat' }: CharacterInspectProp
         </TabsContent>
 
         {/* ── Spells ─────────────────────────────────────── */}
-        {hasCasting && (
+        {spellcasting && (
           <TabsContent value="spells">
             <div className="flex flex-col gap-3">
               <SpellLevelHeader level="cantrip" />
-              {[...char.spellcasting!.cantrips].sort().map((spell) => (
+              {[...spellcasting.cantrips].sort().map((spell) => (
                 <SpellListItem key={spell} spellIndex={spell} />
               ))}
               <div className="flex items-center justify-between mt-2">
                 <SpellLevelHeader level={1} className="flex-1" />
-                <SpellSlotPips total={char.spellcasting!.slotsTotal} used={char.spellcasting!.slotsUsed} size="md" className="ml-3" />
+                <SpellSlotPips total={spellcasting.slotsTotal} used={spellcasting.slotsUsed} size="md" className="ml-3" />
               </div>
-              {[...char.spellcasting!.preparedSpells].sort().map((spell) => (
+              {[...spellcasting.preparedSpells].sort().map((spell) => (
                 <SpellListItem key={spell} spellIndex={spell} />
               ))}
             </div>

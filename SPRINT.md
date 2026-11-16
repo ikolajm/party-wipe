@@ -270,7 +270,7 @@ frontend/src/
 │   │   └── GameOverScreen.tsx — Motion-powered game over with run stats + "Party: Wiped."
 │   ├── molecules/            — StatRow (modifier-primary), ResistanceRow (tactical grid), + the rest
 │   ├── atoms/                — Generated atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
-│   └── providers/            — GameProvider (state + setFloorModifier), ThemeProvider
+│   └── providers/            — GameProvider (state + setFloorModifier)
 └── scripts/
     └── generate-game-data.mjs — SRD → typed TS (spells, features, monsters)
 ```

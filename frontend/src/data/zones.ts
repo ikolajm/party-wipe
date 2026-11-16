@@ -8,9 +8,24 @@
  *   2 = far (opposite ends)
  */
 
-import type { Zone } from './game-types';
+import type { BoundaryKey, Zone } from './game-types';
 
 export type Reach = 'melee' | 'adjacent' | 'any';
+
+const STARTING_ZONES: Record<string, Zone> = { fighter: 1, rogue: 1, barbarian: 1, ranger: 2, wizard: 3, cleric: 2 };
+
+/** Where a class stands when combat begins */
+export function startingZone(classIndex: string): Zone {
+  return STARTING_ZONES[classIndex] ?? 2;
+}
+
+/** The boundary between two adjacent zones, or null when they are not adjacent */
+export function getBoundaryKey(from: Zone, to: Zone): BoundaryKey | null {
+  const low = Math.min(from, to);
+  const high = Math.max(from, to);
+  if (high - low !== 1) return null;
+  return `${low}|${high}` as BoundaryKey;
+}
 
 /** Distance between two zones (0, 1, or 2) */
 export function zoneDistance(a: Zone, b: Zone): number {

@@ -6,15 +6,16 @@ import { resourceColors } from '@/data/game-colors';
 
 export function InitiativeBar() {
   const { state } = useGame();
-  if (!state.combat) return null;
+  const { combat } = state;
+  if (!combat) return null;
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-card bg-black/60 backdrop-blur-md border border-outline-subtle">
-      {state.combat.initiativeOrder.map((entity, i) => {
-        const isActive = i === state.combat!.currentTurnIndex;
+      {combat.initiativeOrder.map((entity, i) => {
+        const isActive = i === combat.currentTurnIndex;
         const isChar = entity.type === 'character';
         const char = isChar ? state.party.find(c => c.id === entity.id) : null;
-        const enemy = !isChar ? state.combat!.enemies.find(e => e.id === entity.id) : null;
+        const enemy = !isChar ? combat.enemies.find(e => e.id === entity.id) : null;
         const isDead = isChar ? !char?.isAlive : !enemy?.isAlive;
         const hp = isChar ? char?.hp || 0 : enemy?.hp || 0;
         const maxHp = isChar ? char?.maxHp || 1 : enemy?.maxHp || 1;
@@ -48,7 +49,7 @@ export function InitiativeBar() {
       })}
       <div className="w-px h-6 bg-outline-subtle mx-1" />
       <span className="text-label-sm text-on-surface-variant whitespace-nowrap">
-        R{state.combat.roundNumber}
+        R{combat.roundNumber}
       </span>
     </div>
   );

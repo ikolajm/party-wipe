@@ -1,6 +1,6 @@
 'use client';
 
-import { DAMAGE_VISUALS, damageColor, type DamageType } from '@/data/damage-visuals';
+import { damageVisual, damageColor } from '@/data/damage-visuals';
 
 type DamageIconProps = {
   type: string;
@@ -8,7 +8,7 @@ type DamageIconProps = {
 };
 
 export function DamageIcon({ type, size = 'size-3' }: DamageIconProps) {
-  const visual = DAMAGE_VISUALS[type as DamageType];
+  const visual = damageVisual(type);
   if (!visual) return null;
   const Icon = visual.icon;
 

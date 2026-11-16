@@ -1,6 +1,20 @@
 import type { Metadata } from 'next';
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { Cinzel, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-cinzel',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jetbrains-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Party Wipe',
@@ -14,20 +28,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <head>
-        {/* The rule targets pages/_document.js. In the App Router the root
-            layout renders on every page, so the font does load site-wide. */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${cinzel.variable} ${jetbrainsMono.variable}`}>
       <body>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

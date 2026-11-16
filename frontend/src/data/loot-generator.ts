@@ -11,8 +11,9 @@ import {
   V1_WEAPONS, V1_ARMOR, V1_CONSUMABLES, LOOT_TIERS,
   type RosterWeapon, type RosterArmor, type RosterConsumable,
 } from './v1-roster';
-import type { RoomType } from './game-types';
-import { random } from './rng';
+import type { Character, RoomType } from './game-types';
+import { random, pick } from './rng';
+import { statMod } from './dice';
 
 export type LootItem = {
   index: string;
@@ -36,9 +37,6 @@ export type LootItem = {
   description: string;
 };
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(random() * arr.length)];
-}
 
 function getTierKey(floor: number): keyof typeof LOOT_TIERS {
   // Keyed to the compressed cadence — floors turn over every 5 rooms.
@@ -144,9 +142,9 @@ export function generateLootChoices(floor: number, count = 3): LootItem[] {
     if (choices.length >= count) break;
     const catItems = allItems.filter(i => i.category === cat && !usedIndices.has(i.index));
     if (catItems.length > 0) {
-      const pick = pickRandom(catItems);
-      choices.push(pick);
-      usedIndices.add(pick.index);
+      const item = pick(catItems);
+      choices.push(item);
+      usedIndices.add(item.index);
     }
   }
 
@@ -154,10 +152,61 @@ export function generateLootChoices(floor: number, count = 3): LootItem[] {
   while (choices.length < count) {
     const remaining = allItems.filter(i => !usedIndices.has(i.index));
     if (remaining.length === 0) break;
-    const pick = pickRandom(remaining);
-    choices.push(pick);
-    usedIndices.add(pick.index);
+    const item = pick(remaining);
+    choices.push(item);
+    usedIndices.add(item.index);
   }
 
   return choices;
+}
+
+/** What taking a loot item does to a character, and the log line for it */
+export function applyLootItem(char: Character, item: LootItem): { updates: Partial<Character>; message: string } | null {
+  if (item.category === 'weapon' && item.damage) {
+    return {
+      updates: {
+        equipment: {
+          ...char.equipment,
+          weapon: {
+            index: item.index,
+            name: item.name,
+            damage: item.damage,
+            damageType: item.damageType || 'slashing',
+            weaponRange: item.weaponRange || 'melee',
+            properties: item.properties || [],
+            onHit: item.onHit,
+          },
+        },
+      },
+      message: `${char.name} equips ${item.name}.`,
+    };
+  }
+  if (item.category === 'armor' && item.acBase !== undefined) {
+    const dexMod = statMod(char.stats.dex);
+    const dexBonus = item.acDexCap !== undefined ? Math.min(dexMod, item.acDexCap) : dexMod;
+    const ac = item.acBase + dexBonus + (char.equipment.shield ? 2 : 0);
+    return {
+      updates: {
+        ac,
+        acSource: item.name,
+        equipment: {
+          ...char.equipment,
+          armor: { index: item.index, name: item.name, acBase: item.acBase, acDexCap: item.acDexCap },
+        },
+      },
+      message: `${char.name} equips ${item.name}. AC is now ${ac}.`,
+    };
+  }
+  if (item.category === 'consumable') {
+    const held = char.consumables.some(c => c.id === item.index);
+    return {
+      updates: {
+        consumables: held
+          ? char.consumables.map(c => c.id === item.index ? { ...c, quantity: c.quantity + 1 } : c)
+          : [...char.consumables, { id: item.index, quantity: 1 }],
+      },
+      message: `${char.name} receives ${item.name}.`,
+    };
+  }
+  return null;
 }

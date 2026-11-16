@@ -7,6 +7,7 @@
  */
 
 import type { StatusFlag } from './condition-visuals';
+import type { GameCondition } from './status-effects';
 
 // ─── Zones ───────────────────────────────────────────────────
 // Zones are numeric positions (1, 2, 3). Distance between entities
@@ -19,7 +20,7 @@ export type Zone = 1 | 2 | 3;
 export interface WeaponOnHit {
   trigger: 'hit' | 'crit';         // when the effect fires
   chance?: number;                   // 0-1, default 1 (always)
-  condition?: string;                // condition to apply (e.g. 'burning', 'frozen')
+  condition?: GameCondition;         // condition to apply (e.g. 'burning', 'frozen')
   conditionDuration?: number;        // turns
   conditionSave?: string;            // ability for save (e.g. 'con')
   conditionDC?: number;              // save DC
@@ -149,7 +150,7 @@ export interface Enemy {
     // Condition on hit (parsed from description)
     conditionDC?: number;
     conditionSave?: string;
-    conditionApplied?: string;
+    conditionApplied?: GameCondition;
     // Save-based damage (breath weapons, AoE)
     saveDC?: number;
     saveType?: string;

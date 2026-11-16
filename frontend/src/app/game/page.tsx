@@ -6,12 +6,13 @@ import { useGame } from '@/components/providers/GameProvider';
 import { useCombat } from '@/hooks/useCombat';
 import { classBuilds } from '@/data/classes';
 import { generateRoom, floorFromRoom } from '@/data/room-generator';
-import { generateEncounter } from '@/data/encounter-generator';
-import { shouldDropLoot, generateLootChoices } from '@/data/loot-generator';
-import { awardXP, checkLevelUp, applyLevelUp, type LevelUpResult } from '@/data/progression';
+import { encounterForRoom } from '@/data/encounter-generator';
+import { shouldDropLoot, generateLootChoices, applyLootItem } from '@/data/loot-generator';
+import { awardVictoryXp, checkLevelUp, applyLevelUp, type LevelUpResult } from '@/data/progression';
 import { useRest } from '@/hooks/useRest';
+import { useInspect } from '@/hooks/useInspect';
 import { pickFloorModifier } from '@/data/floor-modifiers';
-import { statMod } from '@/data/dice';
+import { startingZone } from '@/data/zones';
 import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
@@ -22,15 +23,14 @@ import { GlobalFeedbackOverlay } from '@/components/game/feedback';
 import { PhaseBanner } from '@/components/game/PhaseBanner';
 import { VictoryOverlay } from '@/components/game/VictoryOverlay';
 import { AnimatePresence, motion } from 'motion/react';
-import type { Character, Enemy, Zone } from '@/data/game-types';
+import type { Character, Enemy } from '@/data/game-types';
 import type { LootItem } from '@/data/loot-generator';
 
 export default function GamePage() {
   const { state, initParty, setPhase, setRoom, setCombat, addLog, updateCharacter, advanceRoom, setFloorModifier } = useGame();
 
   const router = useRouter();
-  const [inspectId, setInspectId] = useState<string | null>(null);
-  const [inspectType, setInspectType] = useState<'character' | 'enemy'>('character');
+  const { inspecting, selectTarget, closeInspect } = useInspect();
   const [lootChoices, setLootChoices] = useState<LootItem[]>([]);
   const [levelUpResults, setLevelUpResults] = useState<LevelUpResult[]>([]);
   const [victoryXp, setVictoryXp] = useState<number | null>(null);
@@ -39,13 +39,8 @@ export default function GamePage() {
   // ─── Victory Handler ──────────────────────────────────────────
 
   const handleVictory = useCallback((defeatedEnemies: Enemy[]) => {
-    const xpTotal = defeatedEnemies.reduce((sum, e) => sum + (e.xp || 0), 0);
-    const updatedParty = awardXP(state.party, xpTotal);
-    const aliveCount = updatedParty.filter(c => c.isAlive).length;
-    if (aliveCount > 0) {
-      const xpEach = Math.floor(xpTotal / aliveCount);
-      addLog(`Party gains ${xpTotal} XP (${xpEach} each).`, 'system');
-    }
+    const { party: updatedParty, xpTotal, message } = awardVictoryXp(state.party, defeatedEnemies);
+    if (message) addLog(message, 'system');
     updatedParty.forEach(c => updateCharacter(c.id, { xp: c.xp }));
 
     // Capture before async delay
@@ -142,11 +137,9 @@ export default function GamePage() {
     if (!room) return;
 
     if (room.type === 'combat' || room.type === 'elite_combat' || room.type === 'boss') {
-      const zoneMap: Record<string, Zone> = { fighter: 1, rogue: 1, barbarian: 1, ranger: 2, wizard: 3, cleric: 2 };
-      state.party.forEach(char => updateCharacter(char.id, { zone: zoneMap[char.classIndex] || 2 }));
+      state.party.forEach(char => updateCharacter(char.id, { zone: startingZone(char.classIndex) }));
 
-      const initBonus = state.floorModifier?.id === 'echoing-halls' ? 5 : 0;
-      const encounter = generateEncounter(state.floor, room.type, state.party, room.roomNumber, initBonus);
+      const encounter = encounterForRoom(room, state.party, state.floorModifier);
       setCombat(encounter);
       setPhase('combat');
 
@@ -169,47 +162,10 @@ export default function GamePage() {
     const char = state.party.find(c => c.id === charId);
     if (!char) return;
 
-    if (item.category === 'weapon' && item.damage) {
-      updateCharacter(charId, {
-        equipment: {
-          ...char.equipment,
-          weapon: {
-            index: item.index,
-            name: item.name,
-            damage: item.damage,
-            damageType: item.damageType || 'slashing',
-            weaponRange: item.weaponRange || 'melee',
-            properties: item.properties || [],
-            onHit: item.onHit,
-          },
-        },
-      });
-      addLog(`${char.name} equips ${item.name}.`, 'loot');
-    } else if (item.category === 'armor' && item.acBase !== undefined) {
-      const dexMod = statMod(char.stats.dex);
-      const dexBonus = item.acDexCap !== undefined ? Math.min(dexMod, item.acDexCap) : dexMod;
-      const newAc = item.acBase + dexBonus + (char.equipment.shield ? 2 : 0);
-      updateCharacter(charId, {
-        ac: newAc,
-        acSource: item.name,
-        equipment: {
-          ...char.equipment,
-          armor: { index: item.index, name: item.name, acBase: item.acBase, acDexCap: item.acDexCap },
-        },
-      });
-      addLog(`${char.name} equips ${item.name}. AC is now ${newAc}.`, 'loot');
-    } else if (item.category === 'consumable') {
-      const existing = char.consumables.find(c => c.id === item.index);
-      if (existing) {
-        updateCharacter(charId, {
-          consumables: char.consumables.map(c => c.id === item.index ? { ...c, quantity: c.quantity + 1 } : c),
-        });
-      } else {
-        updateCharacter(charId, {
-          consumables: [...char.consumables, { id: item.index, quantity: 1 }],
-        });
-      }
-      addLog(`${char.name} receives ${item.name}.`, 'loot');
+    const result = applyLootItem(char, item);
+    if (result) {
+      updateCharacter(charId, result.updates);
+      addLog(result.message, 'loot');
     }
 
     setLootChoices([]);
@@ -219,19 +175,6 @@ export default function GamePage() {
   function handleSkipLoot() {
     setLootChoices([]);
     checkAndQueueLevelUps(state.party);
-  }
-
-  // ─── Inspect ──────────────────────────────────────────────────
-
-  const inspecting: Character | Enemy | null = inspectId
-    ? (inspectType === 'character'
-      ? state.party.find(c => c.id === inspectId) || null
-      : state.combat?.enemies.find(e => e.id === inspectId) || null)
-    : null;
-
-  function handleSelectTarget(id: string, type: 'character' | 'enemy') {
-    setInspectType(type);
-    setInspectId(id);
   }
 
   // ─── Render ───────────────────────────────────────────────────
@@ -248,7 +191,7 @@ export default function GamePage() {
 
       {/* ─── Combat ──────────────────────────────────────── */}
       {state.phase === 'combat' && state.combat && (
-        <ZoneLayout onSelectTarget={handleSelectTarget} />
+        <ZoneLayout onSelectTarget={selectTarget} />
       )}
 
       {/* ─── Room Preview ────────────────────────────────── */}
@@ -327,7 +270,7 @@ export default function GamePage() {
       )}
       </AnimatePresence>
 
-      <InspectSheet inspecting={inspecting} inspectType={inspectType} onClose={() => setInspectId(null)} />
+      <InspectSheet inspecting={inspecting} onClose={closeInspect} />
     </div>
   );
 }

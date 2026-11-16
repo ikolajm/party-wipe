@@ -35,3 +35,7 @@ export function random(): number {
   if (!next) next = init();
   return next();
 }
+
+export function pick<T>(items: readonly T[]): T {
+  return items[Math.floor(random() * items.length)];
+}

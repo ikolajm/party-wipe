@@ -33,15 +33,17 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
   // target pick through onUseItem (consume the scroll) instead of onCast.
   const [scrollItemId, setScrollItemId] = useState<string | null>(null);
 
-  const currentEntity = state.combat?.initiativeOrder[state.combat.currentTurnIndex];
+  const { combat } = state;
+  const currentEntity = combat?.initiativeOrder[combat.currentTurnIndex];
   const character = currentEntity?.type === 'character'
     ? state.party.find(c => c.id === currentEntity.id) : null;
 
-  if (!character || !state.combat) return null;
+  if (!character || !combat) return null;
 
-  const resources = state.combat.turnResources;
+  const { spellcasting } = character;
+  const resources = combat.turnResources;
   const reach = weaponReach(character.equipment.weapon);
-  const reachableEnemies = state.combat.enemies.filter(e => e.isAlive && canReach(character.zone, e.zone, reach));
+  const reachableEnemies = combat.enemies.filter(e => e.isAlive && canReach(character.zone, e.zone, reach));
   const validMoves = movableZones(character.zone);
   const hasSubMenu = mode !== 'idle';
 
@@ -64,26 +66,26 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
             </PanelSection>
           )}
 
-          {mode === 'cast-select' && character.spellcasting && (
+          {mode === 'cast-select' && spellcasting && (
             <PanelSection label="Select Spell">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2 py-1">
                   <span className="text-label-sm uppercase tracking-widest font-semibold text-on-surface-variant">At Will</span>
                   <div className="flex-1 h-px bg-outline-subtle" />
                 </div>
-                {[...character.spellcasting.cantrips].filter(isSpellCastable).sort().map((spell) => (
+                {[...spellcasting.cantrips].filter(isSpellCastable).sort().map((spell) => (
                   <SpellRow key={spell} spell={spell} available onClick={() => { setSelectedSpell(spell); setCastingAsBonus(false); setScrollItemId(null); setMode('cast-target'); }} />
                 ))}
                 {(() => {
-                  const castableSlotSpells = [...character.spellcasting.preparedSpells].filter(isSpellCastable).sort();
+                  const castableSlotSpells = [...spellcasting.preparedSpells].filter(isSpellCastable).sort();
                   if (castableSlotSpells.length === 0) return null;
-                  const hasSlots = (character.spellcasting!.slotsTotal - character.spellcasting!.slotsUsed) > 0;
+                  const hasSlots = (spellcasting.slotsTotal - spellcasting.slotsUsed) > 0;
                   return (
                     <>
                       <div className="flex items-center gap-2 py-1 mt-1">
                         <span className="text-label-sm uppercase tracking-widest font-semibold text-on-surface-variant">Level I</span>
                         <div className="flex-1 h-px bg-outline-subtle" />
-                        <SpellSlotPips total={character.spellcasting!.slotsTotal} used={character.spellcasting!.slotsUsed} size="md" />
+                        <SpellSlotPips total={spellcasting.slotsTotal} used={spellcasting.slotsUsed} size="md" />
                       </div>
                       {castableSlotSpells.map((spell) => (
                         <SpellRow key={spell} spell={spell} available={hasSlots}
@@ -121,7 +123,7 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
                 <div className="flex flex-wrap gap-2">
                   {targetsBoundary && (['1|2', '2|3'] as const).map(key => {
                     const [a, b] = key.split('|');
-                    const existing = state.combat!.boundaries[key];
+                    const existing = combat.boundaries[key];
                     return (
                       <TargetButton key={key} variant="ally"
                         onClick={() => confirmTarget(key)}
@@ -137,7 +139,7 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
                       name={ally.name} detail={`${ally.hp}/${ally.maxHp} HP`} />
                   ))}
                   {targetsEnemies && (() => {
-                    const targets = state.combat!.enemies.filter(e => e.isAlive && canReach(character.zone, e.zone, r));
+                    const targets = combat.enemies.filter(e => e.isAlive && canReach(character.zone, e.zone, r));
                     if (targets.length === 0) return <EmptyHint>No targets in range</EmptyHint>;
                     return targets.map((e) => (
                       <TargetButton key={e.id} variant="enemy"

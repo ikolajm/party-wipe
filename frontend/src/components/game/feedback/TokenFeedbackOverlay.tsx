@@ -21,7 +21,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck } from 'lucide-react';
 import { onCombatFeedback, type CombatFeedbackEvent, type DamageQualifier, CAST_CHARGE_MS } from '@/data/combat-events';
-import { DAMAGE_VISUALS, damageColor, damageFamily, type DamageType } from '@/data/damage-visuals';
+import { DAMAGE_VISUALS, damageColor, damageFamily, damageVisual } from '@/data/damage-visuals';
 import { HIT_EVENT_VISUALS } from '@/data/hit-event-visuals';
 import { schoolColors } from '@/data/game-colors';
 import { tint } from '@/data/color-utils';
@@ -226,7 +226,7 @@ function LabelResult({ kind }: { kind: 'miss' | 'immune' }) {
   const visual = HIT_EVENT_VISUALS[kind]!;
   return (
     <motion.span
-      className="font-black uppercase tracking-widest text-body-lg"
+      className="font-bold uppercase tracking-widest text-body-lg"
       style={{ color: visual.color, textShadow: '0 1px 3px rgba(0,0,0,0.95), 0 0 10px currentColor' }}
       initial={{ opacity: 0, scale: 0.7, y: 6 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -241,8 +241,7 @@ function LabelResult({ kind }: { kind: 'miss' | 'immune' }) {
 function ValueResult({ overlay }: { overlay: ActiveOverlay }) {
   if (overlay.value == null) return null;
   const isHeal = overlay.kind === 'heal';
-  const type: DamageType = isHeal ? 'healing' : (overlay.damageType as DamageType);
-  const visual = DAMAGE_VISUALS[type];
+  const visual = isHeal ? DAMAGE_VISUALS.healing : damageVisual(overlay.damageType);
   const color = visual?.color ?? damageColor(overlay.damageType);
   const Icon = visual?.icon;
   const text = isHeal ? `+${overlay.value}` : `${overlay.value}`;
@@ -259,7 +258,7 @@ function ValueResult({ overlay }: { overlay: ActiveOverlay }) {
     >
       {ribbonText && overlay.qualifier && (
         <span
-          className="text-label-sm font-black uppercase tracking-widest"
+          className="text-label-sm font-bold uppercase tracking-widest"
           style={{ color: QUALIFIER_COLOR[overlay.qualifier], textShadow: '0 1px 2px rgba(0,0,0,0.95), 0 0 6px currentColor' }}
         >
           {ribbonText}
@@ -273,7 +272,7 @@ function ValueResult({ overlay }: { overlay: ActiveOverlay }) {
           />
         )}
         <span
-          className={`relative font-black tabular-nums ${isCrit ? 'text-title-md' : 'text-title-sm'}`}
+          className={`relative font-bold tabular-nums ${isCrit ? 'text-title-md' : 'text-title-sm'}`}
           style={{ color, textShadow: `0 1px 3px rgba(0,0,0,0.95), 0 0 10px ${color}` }}
         >
           {text}

@@ -5,20 +5,16 @@ import { CharacterInspect } from './CharacterInspect';
 import { EnemyInspect } from './EnemyInspect';
 import type { Character, Enemy } from '@/data/game-types';
 
-export function InspectSheet({ inspecting, inspectType, onClose }: {
+export function InspectSheet({ inspecting, onClose }: {
   inspecting: Character | Enemy | null;
-  inspectType: 'character' | 'enemy';
   onClose: () => void;
 }) {
   return (
     <Sheet open={!!inspecting} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" size="lg" className="overflow-y-auto">
-        {inspecting && inspectType === 'character' && (
-          <CharacterInspect char={inspecting as Character} />
-        )}
-        {inspecting && inspectType === 'enemy' && (
-          <EnemyInspect enemy={inspecting as Enemy} />
-        )}
+        {inspecting && ('monsterIndex' in inspecting
+          ? <EnemyInspect enemy={inspecting} />
+          : <CharacterInspect char={inspecting} />)}
       </SheetContent>
     </Sheet>
   );
