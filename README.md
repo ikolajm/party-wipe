@@ -1,22 +1,54 @@
 # Party Wipe
 
-A D&D 5e roguelike survival game. Build a party of 4, descend into procedurally generated dungeon rooms, fight monsters, collect loot, level up. The dungeon always wins — the question is how far you get.
+A solo D&D 5e roguelike on the SRD. Draft a party of four, walk room by room
+into a dungeon that gets harder floor by floor, and see how far the party gets
+before it wipes.
 
-## How It Works
+Play it at https://blue-sand-074984610.3.azurestaticapps.net.
 
-Zone-based combat (melee / ranged / far) with 5e-lite rules. Turn-based initiative, d20 attack rolls, spell saves, status effects. Rooms scale in difficulty until your party wipes. Score tracks rooms cleared, damage dealt, characters lost, and more.
+## What it does
 
-No grid. No sprites. Text, icons, and tokens — with CSS and Motion status effect animations in combat that show the design craft.
+### Draft a party
 
-## Status
+![A class card opened to its sheet, then added to the party](docs/media/draft.gif)
 
-V1 is feature-complete and plays end to end — combat engine, full UI, polish, and balance are all done. Development is paused.
+Six classes, each with its own stats, weapon, armor and spells drawn from the
+SRD. Every class opens to a full sheet, its stats, its combat kit and how it
+grows level by level, before it joins the party.
 
-Play it at https://blue-sand-074984610.3.azurestaticapps.net. The [developer page](https://blue-sand-074984610.3.azurestaticapps.net/dev/) jumps to any phase, so every screen can be seen without playing a full run. See [SPRINT.md](SPRINT.md) for the detailed build state.
+### Rooms and floor modifiers
 
-## Setup
+![A room's preview, showing the floor modifier in effect](docs/media/modifier.gif)
 
-The game lives in `frontend/`:
+Each room is previewed before the party walks in: what kind of room it is, and
+the floor's modifier, a twist on the rules that holds for the whole floor. One
+gives every enemy more armor, another heals the party each turn, another stops
+anyone changing zones. Every fifth room holds a boss.
+
+### Zone combat
+
+![The Wizard's Magic Missile and the Fighter's attack landing on the enemies](docs/media/combat.gif)
+
+Combat plays out across three zones, with no grid. Where a combatant stands
+decides what it can reach: a sword only strikes its own zone, a bow or a spell
+reaches further. Each turn holds an action, a bonus action and a move. Spells
+and weapons land conditions, such as paralyzed, restrained or burning, and
+each one shows on the token it holds.
+
+## How it plays
+
+Initiative sets the order each round. Attacks roll a d20 against armour class and spells call for saving
+throws, with damage types, resistances and immunities tracked as the SRD sets
+them out. Between fights come loot, rests and level-ups. The run ends when the
+last of the party falls, and the final screen counts the floors reached, the
+rooms cleared and the enemies killed.
+
+No sprites and no character art: the game is text, icons and tokens, with its
+combat feedback and condition effects animated in CSS and Motion.
+
+## Running it
+
+The game lives in `frontend/` and needs Node 22:
 
 ```bash
 cd frontend
@@ -24,27 +56,36 @@ npm install
 npm run dev
 ```
 
-Then open the dev server. `/` is the title screen, `/draft` builds a party, `/dev` jumps to any game phase for testing.
+Then open the dev server. `/` is the title screen and `/draft` builds a party.
 
-### Regenerating game data (optional)
+`/dev` opens any screen directly for testing, with the party already drafted.
+It also takes parameters, which the demo footage is recorded with:
 
-Game data is committed — you only need this if the SRD subset changes. The `server/` pipeline merges and seeds the raw SRD; `frontend/scripts/generate-game-data.mjs` then emits the typed game data files. See [the development notes](docs/development.md#data-pipeline) for the full flow.
+| Parameter | Does |
+|-----------|------|
+| `seed=<any>` | Every roll, room, encounter and drop repeats from that seed |
+| `phase=<id>` | Opens straight onto a screen, such as `room-preview` or `room-preview-boss` |
+| `mod=<id>` | Sets a floor modifier, such as `ironhide` |
+| `capture` | Hides the developer bars and lays the page out as the game does |
+
+The footage itself is scripted in [`capture/`](capture/README.md).
+
+Game data is committed, so regenerating it is only needed when the SRD subset
+changes: [the development notes](docs/development.md#data-pipeline) set out the
+pipeline.
 
 ## Data
 
-All game data is sourced from the [5e Systems Reference Document](https://dnd.wizards.com/resources/systems-reference-document) via the [5e SRD API](https://www.dnd5eapi.co/). A two-step merge/seed pipeline normalizes 2014 and 2024 SRD editions into unified TypeScript-typed JSON.
+All game data comes from the [5e Systems Reference Document](https://dnd.wizards.com/resources/systems-reference-document)
+through the [5e SRD API](https://www.dnd5eapi.co/). A merge and seed pipeline
+brings the 2014 and 2024 editions into one set of typed JSON.
 
 ## Documentation
 
 | Document | Purpose |
 |----------|---------|
 | [docs/development.md](docs/development.md) | Project structure, data pipeline, architecture and conventions |
-| [SPRINT.md](SPRINT.md) | Active tracker — source of truth for build state |
-| [TODO.md](TODO.md) | Frozen historical build checklist |
-| [docs/V1-SPEC.md](docs/V1-SPEC.md) | Game design spec |
-| [docs/ENGINE-RULES.md](docs/ENGINE-RULES.md) | Shipped engine mechanics reference |
-| [docs/UI-SPEC.md](docs/UI-SPEC.md) | UI component sizing and spec reference |
-| [docs/DATA-LICENSING.md](docs/DATA-LICENSING.md) | SRD licensing and data source notes |
+| [capture/README.md](capture/README.md) | Recording the demo footage |
 
 ---
 
