@@ -1,4 +1,4 @@
-# Party Wipe — CLAUDE.md
+# Party Wipe — Development
 
 ## What This Is
 
@@ -14,11 +14,11 @@ V1 is feature-complete and plays end to end — engine, UI, polish, and balance 
 
 ```
 party-wipe/
-├── CLAUDE.md               ← You are here
 ├── README.md
 ├── SPRINT.md               ← Active tracker — source of truth for build state
 ├── TODO.md                 ← Frozen historical build checklist (points at SPRINT.md)
 ├── docs/
+│   ├── development.md      ← This file: structure, pipeline, architecture, conventions
 │   ├── V1-SPEC.md          ← Game design spec
 │   ├── ENGINE-RULES.md     ← Shipped engine mechanics reference
 │   ├── UI-SPEC.md          ← UI component sizing/spec reference
@@ -48,9 +48,9 @@ party-wipe/
         │   ├── atoms/      ← Design-system atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
         │   ├── molecules/  ← Game-specific composed components (StatRow, HealthBar, ZoneToken, …)
         │   ├── game/       ← Screen + HUD components (ZoneLayout, ActionBar, RoomPreview, …)
-        │   └── providers/  ← GameProvider (game state), ThemeProvider
+        │   └── providers/  ← GameProvider (game state)
         ├── data/           ← Game data + pure logic (types, classes, generators, status-effects, …)
-        ├── hooks/          ← Combat orchestration (useCombat + resolvers/enemy-turn/modifiers, useRest)
+        ├── hooks/          ← Combat orchestration (useCombat + resolvers/enemy-turn/modifiers, useRest, useInspect)
         ├── styles/loom/    ← Loom's tokens and class layer, delivered by `npm run loom:sync` — never edited
         ├── tailwind-theme.css ← Tailwind's theme names mapped onto Loom's tokens
         └── game-tokens.css ← Game color layer over the design system tokens
@@ -108,6 +108,7 @@ Loom, consumed at the tokens tier: Loom's stylesheets, Party Wipe's own componen
 
 - `npm run loom:sync` (from `frontend/`, with the Loom repo beside this one at `../loom`) regenerates `src/styles/loom/` from the answers file. Change the brand there, never in the delivered stylesheets.
 - `app/globals.css` declares the cascade layer order before anything else: Loom's layers sit above Tailwind's base and below its utilities, so preflight does not reset the type ramp and Loom's button reset does not clear a `bg-*` or `text-*` class.
+- Fonts are self-hosted through `next/font` in `app/layout.tsx`; `globals.css` points `--font-heading` and `--font-body` at its variables.
 - Use `var(--space-*)`, `var(--primary)`, `var(--font-heading)`, etc., or their Tailwind names from `tailwind-theme.css`
 - Typography classes from Loom's class layer: `text-display-*`, `text-title-*`, `text-body-*`, `text-label-*`
 - Atoms in `components/atoms/` came from the earlier pipeline and are project-owned now, since the tokens tier delivers no components; game-specific molecules in `components/molecules/`
