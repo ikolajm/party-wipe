@@ -51,9 +51,12 @@ type RoomPreviewProps = {
   room: Room;
   floorModifier: FloorModifier | null;
   onEnter: () => void;
+  /** Holds the entrance until the screen has faded up; defaults to true. */
+  ready?: boolean;
 };
 
-export function RoomPreview({ room, floorModifier, onEnter }: RoomPreviewProps) {
+export function RoomPreview({ room, floorModifier, onEnter, ready = true }: RoomPreviewProps) {
+  const entrance = ready ? 'show' : 'hidden';
   const rc = ROOM_CONFIG[room.type] || ROOM_CONFIG.combat;
   const isBoss = room.type === 'boss';
   const isElite = room.type === 'elite_combat';
@@ -67,7 +70,7 @@ export function RoomPreview({ room, floorModifier, onEnter }: RoomPreviewProps) 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
         variants={bgIcon}
         initial="hidden"
-        animate="show"
+        animate={entrance}
         style={{ color: rc.glowColor }}
       >
         <GameIcon category="room" name={rc.icon} size="xl" className="w-[60%] h-[60%] max-w-[400px] max-h-[400px]" />
@@ -89,7 +92,7 @@ export function RoomPreview({ room, floorModifier, onEnter }: RoomPreviewProps) 
         className="relative z-10 flex flex-col items-center justify-center h-full gap-5 px-6"
         variants={container}
         initial="hidden"
-        animate="show"
+        animate={entrance}
       >
         {/* Floor / Room */}
         <motion.span
