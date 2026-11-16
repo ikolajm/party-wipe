@@ -9,8 +9,8 @@
  *
  * Three layers, stacked on the card:
  *   1. Scrim    — dims the card content behind the result
- *   2. Flourish — themed animation (family-color radial pulse for now;
- *                 bespoke per-family treatments layer on later)
+ *   2. Flourish — a family-color radial pulse, under each damage family's
+ *                 own animation (FamilyFlourish)
  *   3. Result   — qualifier ribbon + number-in-glyph (or label for miss/immune)
  *
  * Spell-cast charge-up is a special case: no scrim (caster stays visible),
@@ -187,10 +187,8 @@ function Flourish({ color, kind }: { color: string; kind: TokenOverlayKind }) {
   );
 }
 
-// ─── Bespoke family flourish (Umbrella B) ────────────────────────────────
-// Renders damage-family-specific texture on top of the generic radial
-// pulse. Unimplemented families fall through to no-op — the pulse alone
-// carries the moment until a bespoke component is added.
+// ─── Family flourish ─────────────────────────────────────────────────────
+// Each damage family's own animation, on top of the generic radial pulse.
 
 function FamilyFlourish({ overlay, color }: { overlay: ActiveOverlay; color: string }) {
   if (overlay.kind !== 'damage' && overlay.kind !== 'heal') return null;
