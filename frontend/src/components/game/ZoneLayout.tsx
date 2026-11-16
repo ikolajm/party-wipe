@@ -11,18 +11,19 @@ export function ZoneLayout({ onSelectTarget }: {
   onSelectTarget: (id: string, type: 'character' | 'enemy') => void;
 }) {
   const { state } = useGame();
-  if (!state.combat) return null;
+  const { combat } = state;
+  if (!combat) return null;
 
   /** Get display status effects by merging character statusEffects + combat activeEffects */
-  function getDisplayEffects(entityId: string, baseEffects: StatusFlag[]): VisualState[] {
-    const fromCombat = state.combat!.activeEffects
+  const getDisplayEffects = (entityId: string, baseEffects: StatusFlag[]): VisualState[] => {
+    const fromCombat = combat.activeEffects
       .filter(e => e.targetId === entityId)
       .map(e => e.condition);
     const merged = new Set<VisualState>([...baseEffects, ...fromCombat]);
     return [...merged];
-  }
+  };
 
-  const currentEntity = state.combat.initiativeOrder[state.combat.currentTurnIndex];
+  const currentEntity = combat.initiativeOrder[combat.currentTurnIndex];
   const zones: Zone[] = [1, 2, 3];
 
   const ZONE_BG = [
@@ -35,7 +36,7 @@ export function ZoneLayout({ onSelectTarget }: {
     <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] h-full p-6 pt-[88px] pb-[180px] gap-1">
       {zones.flatMap((zone, i) => {
         const zoneChars = state.party.filter(c => c.zone === zone).sort((a, b) => a.name.localeCompare(b.name));
-        const zoneEnemies = state.combat!.enemies.filter(e => e.zone === zone).sort((a, b) => a.name.localeCompare(b.name));
+        const zoneEnemies = combat.enemies.filter(e => e.zone === zone).sort((a, b) => a.name.localeCompare(b.name));
         const hasBoth = zoneChars.length > 0 && zoneEnemies.length > 0;
 
         return [
@@ -88,7 +89,7 @@ export function ZoneLayout({ onSelectTarget }: {
                   maxHp={enemy.maxHp}
                   ac={enemy.ac}
                   statusEffects={getDisplayEffects(enemy.id, enemy.statusEffects)}
-                  intent={state.combat!.enemyIntents[enemy.id]?.type}
+                  intent={combat.enemyIntents[enemy.id]?.type}
                   isActive={enemy.id === currentEntity?.id}
                   isDead={!enemy.isAlive}
                   onClick={() => onSelectTarget(enemy.id, 'enemy')}
@@ -105,7 +106,7 @@ export function ZoneLayout({ onSelectTarget }: {
           // Boundary wall indicator between zones
           i < 2 && (() => {
             const bKey = `${zone}|${zone + 1}` as import('@/data/game-types').BoundaryKey;
-            const b = state.combat!.boundaries[bKey];
+            const b = combat.boundaries[bKey];
             const bv = b ? BOUNDARY_VISUALS[b.element as BoundaryElement] : null;
             const BoundaryIcon = bv?.icon;
             return (

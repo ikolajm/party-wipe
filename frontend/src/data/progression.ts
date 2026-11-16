@@ -87,6 +87,17 @@ export function awardXP(party: Character[], xpTotal: number): Character[] {
   });
 }
 
+/** XP from a won fight: the party after the award, the total, and the log line */
+export function awardVictoryXp(party: Character[], defeated: { xp?: number }[]): { party: Character[]; xpTotal: number; message: string | null } {
+  const xpTotal = defeated.reduce((sum, e) => sum + (e.xp || 0), 0);
+  const aliveCount = party.filter(c => c.isAlive).length;
+  return {
+    party: awardXP(party, xpTotal),
+    xpTotal,
+    message: aliveCount > 0 ? `Party gains ${xpTotal} XP (${Math.floor(xpTotal / aliveCount)} each).` : null,
+  };
+}
+
 /** Check if a character is eligible to level up */
 export function checkLevelUp(character: Character): boolean {
   if (character.level >= 10) return false;

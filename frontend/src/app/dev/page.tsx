@@ -6,8 +6,10 @@ import { GameProvider, useGame } from '@/components/providers/GameProvider';
 import { useCombat } from '@/hooks/useCombat';
 import { classBuilds } from '@/data/classes';
 import { generateRoom } from '@/data/room-generator';
-import { generateEncounter } from '@/data/encounter-generator';
-import { generateLootChoices } from '@/data/loot-generator';
+import { encounterForRoom } from '@/data/encounter-generator';
+import { generateLootChoices, applyLootItem } from '@/data/loot-generator';
+import { startingZone } from '@/data/zones';
+import { useInspect } from '@/hooks/useInspect';
 import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
@@ -16,12 +18,11 @@ import { RestScreen } from '@/components/game/RestScreen';
 import { GameOverScreen } from '@/components/game/GameOverScreen';
 import { GlobalFeedbackOverlay } from '@/components/game/feedback';
 import { PhaseBanner } from '@/components/game/PhaseBanner';
-import type { Character, Enemy, Zone, GamePhase, Room } from '@/data/game-types';
+import type { Enemy, GamePhase, Room, CombatState } from '@/data/game-types';
 import type { LootItem } from '@/data/loot-generator';
-import { statMod } from '@/data/dice';
-import { awardXP, applyLevelUp, XP_THRESHOLDS, type LevelUpResult } from '@/data/progression';
+import { awardVictoryXp, applyLevelUp, XP_THRESHOLDS, type LevelUpResult } from '@/data/progression';
 import { useRest } from '@/hooks/useRest';
-import { applyCondition, makeEffectId, type GameCondition } from '@/data/status-effects';
+import { applyCondition, makeEffectId, type ActiveEffect, type GameCondition } from '@/data/status-effects';
 import { FLOOR_MODIFIERS } from '@/data/floor-modifiers';
 
 const PHASES: { id: GamePhase | 'room-preview-boss'; label: string }[] = [
@@ -34,16 +35,18 @@ const PHASES: { id: GamePhase | 'room-preview-boss'; label: string }[] = [
   { id: 'game-over', label: 'Game Over' },
 ];
 
+const INFLICT_CONDITIONS: GameCondition[] = ['paralyzed', 'unconscious', 'restrained', 'poisoned', 'frightened', 'prone', 'burning', 'frozen', 'commanded', 'staggered', 'hunterMarked'];
+const BUFF_CONDITIONS: GameCondition[] = ['blessed', 'shielded'];
+
 const noSubscription = () => () => {};
 
 function DevHarness() {
   const router = useRouter();
   const { state, initParty, setPhase, setRoom, setCombat, addLog, updateCharacter, updateStats, setFloorModifier } = useGame();
+  const combatState = state.combat;
   const [activePhase, setActivePhase] = useState<string>('room-preview');
-  const [inspectId, setInspectId] = useState<string | null>(null);
-  const [inspectType, setInspectType] = useState<'character' | 'enemy'>('character');
+  const { inspecting, selectTarget, closeInspect } = useInspect();
   const [lootChoices, setLootChoices] = useState<LootItem[]>([]);
-  const [, setSelectedLoot] = useState<LootItem | null>(null);
   const [levelUpResults, setLevelUpResults] = useState<LevelUpResult[]>([]);
   const { handleFullRest, handleQuickRest, handleTrain } = useRest();
 
@@ -55,6 +58,16 @@ function DevHarness() {
     () => false,
   );
   const devLog = (message: string) => { if (!capture) addLog(message, 'system'); };
+
+  function applyDevEffect(current: CombatState, effect: ActiveEffect, targetName: string) {
+    const { effects, applied, reason } = applyCondition(current.activeEffects, effect);
+    if (applied) {
+      setCombat({ ...current, activeEffects: effects });
+      devLog(`DEV: Applied ${effect.condition} to ${targetName}${reason === 'refreshed' ? ' (refreshed)' : ''}`);
+    } else {
+      devLog(`DEV: ${targetName} already ${reason || 'affected'}`);
+    }
+  }
 
   // Init default party on first load
   React.useEffect(() => {
@@ -93,18 +106,13 @@ function DevHarness() {
       // Entering from a room preview fights that room, so the boss preview leads to the boss.
       const room = enterRoom ?? generateRoom(1, 1);
       setRoom(room);
-      const zoneMap: Record<string, Zone> = { fighter: 1, rogue: 1, barbarian: 1, ranger: 2, wizard: 3, cleric: 2 };
-      state.party.forEach(char => updateCharacter(char.id, { zone: zoneMap[char.classIndex] || 2 }));
-      const roomType = room.type === 'boss' || room.type === 'elite_combat' ? room.type : 'combat';
-      const initBonus = state.floorModifier?.id === 'echoing-halls' ? 5 : 0;
-      const encounter = generateEncounter(room.floor || 1, roomType, state.party, room.roomNumber, initBonus);
-      setCombat(encounter);
+      state.party.forEach(char => updateCharacter(char.id, { zone: startingZone(char.classIndex) }));
+      setCombat(encounterForRoom(room, state.party, state.floorModifier));
       setPhase('combat');
       devLog('Dev: Combat started.');
     } else if (phaseId === 'loot') {
       const choices = generateLootChoices(state.floor || 1);
       setLootChoices(choices);
-      setSelectedLoot(null);
       setPhase('loot');
     } else if (phaseId === 'rest') {
       const room = generateRoom(1, 2);
@@ -134,13 +142,8 @@ function DevHarness() {
   // ─── Handlers (same as game page) ─────────────────────────────
 
   const handleVictory = React.useCallback((defeatedEnemies: Enemy[]) => {
-    const xpTotal = defeatedEnemies.reduce((sum, e) => sum + (e.xp || 0), 0);
-    const updatedParty = awardXP(state.party, xpTotal);
-    const aliveCount = updatedParty.filter(c => c.isAlive).length;
-    if (aliveCount > 0) {
-      const xpEach = Math.floor(xpTotal / aliveCount);
-      addLog(`Party gains ${xpTotal} XP (${xpEach} each).`, 'system');
-    }
+    const { party: updatedParty, message } = awardVictoryXp(state.party, defeatedEnemies);
+    if (message) addLog(message, 'system');
     updatedParty.forEach(c => updateCharacter(c.id, { xp: c.xp }));
     devLog('Dev: Victory! Use nav to jump to next phase.');
     setPhase('room-preview');
@@ -152,49 +155,16 @@ function DevHarness() {
   function handleLootPick(item: LootItem, charId: string) {
     const char = state.party.find(c => c.id === charId);
     if (!char) return;
-    if (item.category === 'weapon' && item.damage) {
-      updateCharacter(charId, {
-        equipment: {
-          ...char.equipment,
-          weapon: { index: item.index, name: item.name, damage: item.damage, damageType: item.damageType || 'slashing', weaponRange: item.weaponRange || 'melee', properties: item.properties || [], onHit: item.onHit },
-        },
-      });
-      addLog(`${char.name} equips ${item.name}.`, 'loot');
-    } else if (item.category === 'armor' && item.acBase !== undefined) {
-      const dexMod = statMod(char.stats.dex);
-      const dexBonus = item.acDexCap !== undefined ? Math.min(dexMod, item.acDexCap) : dexMod;
-      const newAc = item.acBase + dexBonus + (char.equipment.shield ? 2 : 0);
-      updateCharacter(charId, {
-        ac: newAc, acSource: item.name,
-        equipment: { ...char.equipment, armor: { index: item.index, name: item.name, acBase: item.acBase, acDexCap: item.acDexCap } },
-      });
-      addLog(`${char.name} equips ${item.name}. AC is now ${newAc}.`, 'loot');
-    } else if (item.category === 'consumable') {
-      const existing = char.consumables.find(c => c.id === item.index);
-      if (existing) {
-        updateCharacter(charId, { consumables: char.consumables.map(c => c.id === item.index ? { ...c, quantity: c.quantity + 1 } : c) });
-      } else {
-        updateCharacter(charId, { consumables: [...char.consumables, { id: item.index, quantity: 1 }] });
-      }
-      addLog(`${char.name} receives ${item.name}.`, 'loot');
+    const result = applyLootItem(char, item);
+    if (result) {
+      updateCharacter(charId, result.updates);
+      addLog(result.message, 'loot');
     }
     setLootChoices([]);
-    setSelectedLoot(null);
   }
 
   function handleLevelUpDismiss() {
     setLevelUpResults([]);
-  }
-
-  const inspecting: Character | Enemy | null = inspectId
-    ? (inspectType === 'character'
-      ? state.party.find(c => c.id === inspectId) || null
-      : state.combat?.enemies.find(e => e.id === inspectId) || null)
-    : null;
-
-  function handleSelectTarget(id: string, type: 'character' | 'enemy') {
-    setInspectType(type);
-    setInspectId(id);
   }
 
 
@@ -219,30 +189,22 @@ function DevHarness() {
       </div>
 
       {/* ─── Dev Condition Injector (combat only) ──────── */}
-      {state.phase === 'combat' && state.combat && (
+      {state.phase === 'combat' && combatState && (
         <div className={`${capture ? 'hidden' : 'flex'} absolute top-10 left-0 right-0 z-50 items-center gap-1 px-3 py-1.5 bg-black/70 backdrop-blur-sm overflow-x-auto`}>
           <span className="text-label-sm text-error font-semibold uppercase tracking-wider mr-2 shrink-0">Inflict</span>
-          {(['paralyzed', 'unconscious', 'restrained', 'poisoned', 'frightened', 'prone', 'burning', 'frozen', 'commanded', 'staggered', 'hunterMarked'] as GameCondition[]).map(cond => (
+          {INFLICT_CONDITIONS.map(cond => (
             <button key={cond} onClick={() => {
               // Apply to first alive enemy
-              const target = state.combat!.enemies.find(e => e.isAlive);
+              const target = combatState.enemies.find(e => e.isAlive);
               if (!target) return;
-              const effect = {
+              applyDevEffect(combatState, {
                 id: makeEffectId(), name: cond, condition: cond,
                 sourceId: state.party[0]?.id || 'dev', targetId: target.id,
                 turnsRemaining: cond === 'unconscious' ? 10 : cond === 'staggered' ? 1 : cond === 'commanded' ? 1 : -1,
                 ...(cond === 'paralyzed' ? { saveDC: 12, saveAbility: 'wis' } : {}),
                 ...(cond === 'restrained' ? { saveDC: 12, saveAbility: 'dex' } : {}),
-                ...(cond === 'shielded' ? { value: 5 } : {}),
                 ...(cond === 'burning' ? { damagePerTurn: '1d6', damageType: 'fire', turnsRemaining: 3 } : {}),
-              };
-              const { effects: newEffects, applied, reason } = applyCondition(state.combat!.activeEffects, effect);
-              if (applied) {
-                setCombat({ ...state.combat!, activeEffects: newEffects });
-                devLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`);
-              } else {
-                devLog(`DEV: ${target.name} already ${reason || 'affected'}`);
-              }
+              }, target.name);
             }}
               className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-error hover:bg-error/20 transition-colors"
             >
@@ -250,22 +212,15 @@ function DevHarness() {
             </button>
           ))}
           <span className="text-label-sm text-primary font-semibold uppercase tracking-wider mx-2 shrink-0">Buff Ally</span>
-          {(['blessed', 'shielded'] as GameCondition[]).map(cond => (
+          {BUFF_CONDITIONS.map(cond => (
             <button key={`ally-${cond}`} onClick={() => {
               const target = state.party.find(c => c.isAlive);
               if (!target) return;
-              const effect = {
+              applyDevEffect(combatState, {
                 id: makeEffectId(), name: cond, condition: cond,
                 sourceId: 'dev', targetId: target.id, turnsRemaining: -1,
                 ...(cond === 'shielded' ? { value: 2 } : {}),
-              };
-              const { effects: newEffects, applied, reason } = applyCondition(state.combat!.activeEffects, effect);
-              if (applied) {
-                setCombat({ ...state.combat!, activeEffects: newEffects });
-                devLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`);
-              } else {
-                devLog(`DEV: ${target.name} already ${reason || 'affected'}`);
-              }
+              }, target.name);
             }}
               className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-primary hover:bg-primary/20 transition-colors"
             >
@@ -273,7 +228,7 @@ function DevHarness() {
             </button>
           ))}
           <button onClick={() => {
-            setCombat({ ...state.combat!, activeEffects: [] });
+            setCombat({ ...combatState, activeEffects: [] });
             devLog('DEV: Cleared all effects');
           }} className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-on-surface-variant hover:bg-surface-2 transition-colors ml-auto">
             Clear All
@@ -303,8 +258,8 @@ function DevHarness() {
       <div className={`h-full ${capture ? '' : state.phase === 'combat' ? 'pt-[72px]' : 'pt-10'}`}>
 
         {/* Combat */}
-        {state.phase === 'combat' && state.combat && (
-          <ZoneLayout onSelectTarget={handleSelectTarget} />
+        {state.phase === 'combat' && combatState && (
+          <ZoneLayout onSelectTarget={selectTarget} />
         )}
 
         {/* Room Preview */}
@@ -317,7 +272,7 @@ function DevHarness() {
           <LootScreen
             choices={lootChoices}
             party={state.party}
-            onPick={(item, charId) => { handleLootPick(item, charId); }}
+            onPick={handleLootPick}
             onSkip={() => { setLootChoices([]); }}
           />
         )}
@@ -350,7 +305,7 @@ function DevHarness() {
       {/* ─── HUD Overlays ────────────────────────────────── */}
       <FloorChip className={capture ? 'top-3' : 'top-12'} />
 
-      {state.combat && <InitiativeBar />}
+      {combatState && <InitiativeBar />}
       <GameLog />
       {state.phase === 'combat' && <GlobalFeedbackOverlay />}
       {state.phase === 'combat' && <PhaseBanner />}
@@ -367,7 +322,7 @@ function DevHarness() {
         />
       )}
 
-      <InspectSheet inspecting={inspecting} inspectType={inspectType} onClose={() => setInspectId(null)} />
+      <InspectSheet inspecting={inspecting} onClose={closeInspect} />
     </div>
   );
 }

@@ -11,12 +11,9 @@ import { monstersByCR, type MonsterTemplate } from './monster-pool';
 import { getFloorTier } from './encounter-config';
 import { V1_MONSTERS, V1_BOSSES } from './v1-roster';
 import { rollD20, statMod } from './dice';
-import { random } from './rng';
-import type { Enemy, CombatState, Character, CombatEntity, Zone } from './game-types';
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(random() * arr.length)];
-}
+import { random, pick } from './rng';
+import { isGameCondition } from './status-effects';
+import type { Enemy, CombatState, Character, CombatEntity, Zone, Room, FloorModifier } from './game-types';
 
 function randBetween(min: number, max: number): number {
   return Math.floor(random() * (max - min + 1)) + min;
@@ -77,7 +74,7 @@ function pickMonsters(floor: number, roomType: 'combat' | 'elite_combat' | 'boss
   if (roomNumber === 1 && roomType === 'combat') {
     const easyPool = getRegularMonstersForCRs([0.125, 0.25]);
     if (easyPool.length > 0) {
-      return [pickRandom(easyPool), pickRandom(easyPool)];
+      return [pick(easyPool), pick(easyPool)];
     }
   }
 
@@ -86,12 +83,12 @@ function pickMonsters(floor: number, roomType: 'combat' | 'elite_combat' | 'boss
     if (!boss) {
       // Fallback (shouldn't happen): a regular monster from the tier pool
       const fallback = getRegularMonstersForCRs(tier.crPool);
-      return fallback.length > 0 ? [pickRandom(fallback)] : [];
+      return fallback.length > 0 ? [pick(fallback)] : [];
     }
     // Optionally one add from the regular pool
     const addPool = getRegularMonstersForCRs(tier.crPool);
     if (addPool.length > 0 && random() < 0.5) {
-      return [boss, pickRandom(addPool)];
+      return [boss, pick(addPool)];
     }
     return [boss];
   }
@@ -103,7 +100,7 @@ function pickMonsters(floor: number, roomType: 'combat' | 'elite_combat' | 'boss
     if (pool.length === 0) return [];
 
     const count = randBetween(tier.enemyCount.elite[0], tier.enemyCount.elite[1]);
-    return Array.from({ length: count }, () => pickRandom(pool));
+    return Array.from({ length: count }, () => pick(pool));
   }
 
   // Standard combat
@@ -111,7 +108,7 @@ function pickMonsters(floor: number, roomType: 'combat' | 'elite_combat' | 'boss
   if (pool.length === 0) return [];
 
   const count = randBetween(tier.enemyCount.combat[0], tier.enemyCount.combat[1]);
-  return Array.from({ length: count }, () => pickRandom(pool));
+  return Array.from({ length: count }, () => pick(pool));
 }
 
 function templateToEnemy(template: MonsterTemplate, index: number, floor: number): Enemy {
@@ -126,8 +123,10 @@ function templateToEnemy(template: MonsterTemplate, index: number, floor: number
   const scale = isBoss ? bossScale(floor) : 1;
 
   const hp = isBoss ? Math.max(1, Math.round(template.hp * scale)) : template.hp;
-  const actions = template.actions.map(a => {
-    if (!isBoss) return { ...a };
+  const actions = template.actions.map(raw => {
+    const conditionApplied = raw.conditionApplied && isGameCondition(raw.conditionApplied) ? raw.conditionApplied : undefined;
+    const a = { ...raw, conditionApplied };
+    if (!isBoss) return a;
     return {
       ...a,
       ...(a.damage ? { damage: scaleDamage(a.damage, scale) } : {}),
@@ -227,4 +226,11 @@ export function generateEncounter(
     boundaries: { '1|2': null, '2|3': null },
     enemyIntents: {},
   };
+}
+
+/** The encounter for a room, with the floor modifier's effect on initiative */
+export function encounterForRoom(room: Room, party: Character[], floorModifier: FloorModifier | null): CombatState {
+  const roomType = room.type === 'boss' || room.type === 'elite_combat' ? room.type : 'combat';
+  const initBonus = floorModifier?.id === 'echoing-halls' ? 5 : 0;
+  return generateEncounter(room.floor, roomType, party, room.roomNumber, initBonus);
 }

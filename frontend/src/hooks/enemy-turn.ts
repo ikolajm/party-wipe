@@ -17,23 +17,16 @@ import {
   logConditionApplied, logConditionResisted, logConditionFree,
   logBreathWeapon, logDot, logMove, logBoundaryCross, logDeath,
 } from '@/data/combat-log';
-import { zoneLabel, movableZones } from '@/data/zones';
+import { zoneLabel, movableZones, getBoundaryKey } from '@/data/zones';
 import {
   shouldSkipTurn, hasAdvantageAgainst, hasDisadvantageOnAttack,
   getACBonus, resolveEndOfTurnSaves,
-  applyCondition, makeEffectId, type ActiveEffect, type GameCondition,
+  applyCondition, makeEffectId, type ActiveEffect,
 } from '@/data/status-effects';
 import { bloodMoonDamage, type CombatModifiers } from './combat-modifiers';
 import { getClericAuraBonus } from '@/data/zone-synergies';
 import { emitCombatFeedback, delay } from '@/data/combat-events';
-import type { Zone, CombatState, Character, Enemy, BoundaryKey } from '@/data/game-types';
-
-function getBoundaryKey(from: Zone, to: Zone): BoundaryKey | null {
-  const low = Math.min(from, to);
-  const high = Math.max(from, to);
-  if (high - low !== 1) return null;
-  return `${low}|${high}` as BoundaryKey;
-}
+import type { Zone, CombatState, Character, Enemy } from '@/data/game-types';
 
 export interface EnemyTurnContext {
   combat: CombatState;
@@ -126,7 +119,7 @@ export async function executeEnemyTurn(enemy: Enemy, ctx: EnemyTurnContext) {
   const frightOf = moveEffects.find(e => e.condition === 'frightened');
 
   if (behavior === 'melee-aggro' && sameZone.length === 0 && !isFrozen && !mods.unstableGround) {
-    const moves = movableZones(currentEnemy.zone as Zone);
+    const moves = movableZones(currentEnemy.zone);
     const targetZone = nearest.zone;
     let bestMove: Zone | null = moves.reduce((best, z) =>
       Math.abs(z - targetZone) < Math.abs(best - targetZone) ? z : best, moves[0]);
@@ -140,7 +133,7 @@ export async function executeEnemyTurn(enemy: Enemy, ctx: EnemyTurnContext) {
     }
 
     if (bestMove) {
-      const bKey = getBoundaryKey(currentEnemy.zone as Zone, bestMove);
+      const bKey = getBoundaryKey(currentEnemy.zone, bestMove);
       const bEffect = bKey ? workingCombat.boundaries[bKey] : null;
 
       if (bEffect?.blocksMovement) {
@@ -291,7 +284,7 @@ export async function executeEnemyTurn(enemy: Enemy, ctx: EnemyTurnContext) {
       const saveRoll = rollD20() + statMod(target.stats[saveAbility] || 10) + condAura;
       const saveInfo = `${action.conditionSave!.toUpperCase()} ${saveRoll} vs DC ${action.conditionDC}`;
       if (saveRoll < action.conditionDC) {
-        const condition = action.conditionApplied as GameCondition;
+        const condition = action.conditionApplied;
         const effect: ActiveEffect = {
           id: makeEffectId(), name: action.name, condition,
           sourceId: currentEnemy.id, targetId: target.id,

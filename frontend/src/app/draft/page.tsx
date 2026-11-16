@@ -96,6 +96,7 @@ export default function DraftPage() {
                 <>
                   <button
                     onClick={() => removeFromSlot(i)}
+                    aria-label={`Remove ${member.name} from the party`}
                     className="absolute top-2 right-2 bg-transparent border-none text-on-surface-variant cursor-pointer p-1 rounded-component transition-colors hover:text-error hover:bg-error-container"
                   >
                     <X className="size-4" />

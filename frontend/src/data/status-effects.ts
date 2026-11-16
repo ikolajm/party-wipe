@@ -21,20 +21,28 @@ export interface ActiveEffect {
   value?: number;             // generic value (+AC, +damage dice, etc.)
 }
 
-export type GameCondition =
-  | 'paralyzed'     // skip turn, attacks against auto-crit melee
-  | 'unconscious'   // skip turn, attacks against auto-crit, wake on damage
-  | 'restrained'    // disadvantage on attacks, advantage on attacks against
-  | 'poisoned'      // disadvantage on attacks
-  | 'frightened'    // disadvantage on attacks, can't move toward source
-  | 'prone'         // melee advantage against, ranged disadvantage against
-  | 'burning'       // DoT at turn start
-  | 'frozen'        // skip movement
-  | 'blessed'       // +1d4 on attack rolls
-  | 'hunterMarked'  // +1d6 damage from marker
-  | 'shielded'      // +AC bonus
-  | 'commanded'     // skip next turn (one-shot)
-  | 'staggered';    // skip next turn (vulnerability exploit)
+export const GAME_CONDITIONS = [
+  'paralyzed',     // skip turn, attacks against auto-crit melee
+  'unconscious',   // skip turn, attacks against auto-crit, wake on damage
+  'restrained',    // disadvantage on attacks, advantage on attacks against
+  'poisoned',      // disadvantage on attacks
+  'frightened',    // disadvantage on attacks, can't move toward source
+  'prone',         // melee advantage against, ranged disadvantage against
+  'burning',       // DoT at turn start
+  'frozen',        // skip movement
+  'blessed',       // +1d4 on attack rolls
+  'hunterMarked',  // +1d6 damage from marker
+  'shielded',      // +AC bonus
+  'commanded',     // skip next turn (one-shot)
+  'staggered',     // skip next turn (vulnerability exploit)
+] as const;
+
+export type GameCondition = typeof GAME_CONDITIONS[number];
+
+/** SRD conditions outside this list (blinded, stunned, …) have no engine effect. */
+export function isGameCondition(value: string): value is GameCondition {
+  return (GAME_CONDITIONS as readonly string[]).includes(value);
+}
 
 /** Conditions that prevent the entity from acting */
 export const SKIP_TURN_CONDITIONS: GameCondition[] = ['paralyzed', 'unconscious', 'commanded', 'staggered'];

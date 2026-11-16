@@ -99,7 +99,7 @@ export function GameLog() {
             {/* Header */}
             <div className="flex items-center justify-between px-3 py-2 border-b border-outline-subtle/50">
               <span className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-widest">Combat Log</span>
-              <button onClick={() => setExpanded(false)} className="text-on-surface-variant hover:text-on-surface cursor-pointer bg-transparent border-none p-1 rounded-component hover:bg-surface-2 transition-colors">
+              <button onClick={() => setExpanded(false)} aria-label="Close the combat log" className="text-on-surface-variant hover:text-on-surface cursor-pointer bg-transparent border-none p-1 rounded-component hover:bg-surface-2 transition-colors">
                 <X className="size-4" />
               </button>
             </div>

@@ -16,11 +16,11 @@ import {
 import {
   hasAdvantageAgainst, hasDisadvantageOnAttack,
   getAttackBonus, getExtraDamage,
-  applyCondition, makeEffectId, type ActiveEffect, type GameCondition,
+  applyCondition, makeEffectId, type ActiveEffect,
 } from '@/data/status-effects';
 import { bloodMoonDamage, type CombatModifiers } from './combat-modifiers';
 import { getFlankingBonus, getRangerOverwatchBonus } from '@/data/zone-synergies';
-import type { Character, CombatState, BoundaryKey, Zone } from '@/data/game-types';
+import type { Character, CombatState, BoundaryKey } from '@/data/game-types';
 
 // ─── Shared Types ────────────────────────────────────────────
 
@@ -112,7 +112,7 @@ export function resolvePlayerAttack(
   const blessBonus = getAttackBonus(combat.activeEffects.filter(e => e.targetId === attacker.id));
 
   // Zone synergy: flanking (+2 melee hit when 2+ allies in target's zone)
-  const flankingBonus = !isRanged ? getFlankingBonus(attacker, target.zone as Zone, party) : 0;
+  const flankingBonus = !isRanged ? getFlankingBonus(attacker, target.zone, party) : 0;
   if (flankingBonus > 0) logs.push({ message: `  Flanking bonus — +${flankingBonus} to hit!`, type: 'combat' });
 
   const r1 = rollD20();
@@ -240,7 +240,7 @@ export function resolvePlayerAttack(
 
         if (applied) {
           const effect: ActiveEffect = {
-            id: makeEffectId(), name: weapon.name, condition: oh.condition as GameCondition,
+            id: makeEffectId(), name: weapon.name, condition: oh.condition,
             sourceId: attacker.id, targetId, turnsRemaining: oh.conditionDuration ?? 1,
             ...(oh.condition === 'burning' ? { damagePerTurn: '1d6', damageType: 'fire' } : {}),
           };

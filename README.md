@@ -28,7 +28,7 @@ Then open the dev server. `/` is the title screen, `/draft` builds a party, `/de
 
 ### Regenerating game data (optional)
 
-Game data is committed — you only need this if the SRD subset changes. The `server/` pipeline merges and seeds the raw SRD; `frontend/scripts/generate-game-data.mjs` then emits the typed game data files. See [CLAUDE.md](CLAUDE.md#data-pipeline) for the full flow.
+Game data is committed — you only need this if the SRD subset changes. The `server/` pipeline merges and seeds the raw SRD; `frontend/scripts/generate-game-data.mjs` then emits the typed game data files. See [the development notes](docs/development.md#data-pipeline) for the full flow.
 
 ## Data
 
@@ -38,7 +38,7 @@ All game data is sourced from the [5e Systems Reference Document](https://dnd.wi
 
 | Document | Purpose |
 |----------|---------|
-| [CLAUDE.md](CLAUDE.md) | Project context, structure, and conventions |
+| [docs/development.md](docs/development.md) | Project structure, data pipeline, architecture and conventions |
 | [SPRINT.md](SPRINT.md) | Active tracker — source of truth for build state |
 | [TODO.md](TODO.md) | Frozen historical build checklist |
 | [docs/V1-SPEC.md](docs/V1-SPEC.md) | Game design spec |

@@ -12,6 +12,13 @@
 @import "./title.css";
 @import "./room.css";
 
+/* next/font's variables carry a size-matched fallback face that Loom's
+   literal family names skip. Unlayered, this outranks loom.tokens. */
+:root {
+  --font-heading: var(--font-cinzel), system-ui, sans-serif;
+  --font-body: var(--font-jetbrains-mono), system-ui, sans-serif;
+}
+
 body {
   background: var(--surface);
   color: var(--on-surface);

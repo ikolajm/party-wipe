@@ -62,17 +62,24 @@ export const DAMAGE_VISUALS: Record<DamageType, DamageVisual> = {
   healing:     { label: 'Healing',     family: 'healing',   icon: Heart,      color: 'var(--damage-healing)' },
 };
 
-/** Fallback color when a damage type is unknown (defensive — shouldn't happen post-trim) */
+/** Combat data carries SRD damage types as strings; poison and psychic have no visual here. */
+export function isDamageType(value: string): value is DamageType {
+  return Object.hasOwn(DAMAGE_VISUALS, value);
+}
+
+/** The visual for a damage type, or undefined for one the game does not draw */
+export function damageVisual(type: string | undefined): DamageVisual | undefined {
+  return type && isDamageType(type) ? DAMAGE_VISUALS[type] : undefined;
+}
+
 const FALLBACK_COLOR = PHYSICAL_COLOR;
 
 /** Resolve a damage type to its color, with a safe fallback */
 export function damageColor(type: string | undefined): string {
-  if (!type) return FALLBACK_COLOR;
-  return DAMAGE_VISUALS[type as DamageType]?.color ?? FALLBACK_COLOR;
+  return damageVisual(type)?.color ?? FALLBACK_COLOR;
 }
 
 /** Resolve a damage type to its visual family */
 export function damageFamily(type: string | undefined): DamageFamily | null {
-  if (!type) return null;
-  return DAMAGE_VISUALS[type as DamageType]?.family ?? null;
+  return damageVisual(type)?.family ?? null;
 }
