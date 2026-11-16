@@ -1,33 +1,18 @@
 # Party Wipe — Development
 
-## What This Is
+## Deploying
 
-A D&D 5e roguelike survival game. Solo party of 4 characters, zone-based combat, procedural dungeon rooms, loot, leveling. Game ends on TPK. Score tracks how far you got.
-
-Built as pipeline proof #2 — a dark/fantasy brand on the Loom design system. Status effect animations (CSS and Motion) on combat tokens are the design-chops showcase.
-
-## Status
-
-V1 is feature-complete and plays end to end — engine, UI, polish, and balance are done. Development is paused. The game runs on an Azure Static Web App at https://blue-sand-074984610.3.azurestaticapps.net, deployed by the workflow in `.github/workflows/` on every push to `master`. **`SPRINT.md` is the source of truth** for what's built and what's left.
+The game runs on an Azure Static Web App at https://blue-sand-074984610.3.azurestaticapps.net, deployed by the workflow in `.github/workflows/` on every push to `master`.
 
 ## Project Structure
 
 ```
 party-wipe/
 ├── README.md
-├── SPRINT.md               ← Active tracker — source of truth for build state
 ├── capture/                ← Playwright scripts for the demo footage, one per take (its README says how to run them)
-├── TODO.md                 ← Frozen historical build checklist (points at SPRINT.md)
 ├── docs/
-│   ├── development.md      ← This file: structure, pipeline, architecture, conventions
-│   ├── V1-SPEC.md          ← Game design spec
-│   ├── ENGINE-RULES.md     ← Shipped engine mechanics reference
-│   ├── UI-SPEC.md          ← UI component sizing/spec reference
-│   ├── UI-DEEP-DIVE.md     ← Reference-game analysis (FF, BG3, etc.)
-│   ├── DATA-LICENSING.md   ← SRD licensing notes
-│   ├── game-inspo.md       ← Reference game list
-│   ├── visual-ref.md       ← Reference image URLs
-│   └── archive/            ← Spent docs (ICON-PICKLIST.md)
+│   ├── media/              ← The README's GIFs, rendered from the capture takes in remotion-hub
+│   └── development.md      ← This file: structure, pipeline, architecture, conventions
 ├── server/                 ← SRD data pipeline (regeneration only — see below)
 │   └── data/
 │       ├── databases/
@@ -72,21 +57,14 @@ The committed generated files in `frontend/src/data/` are the read path for the 
 
 `frontend/src/data/game-types.ts` is the game's type home — `Character`, `Enemy`, `CombatState`, `Room`, `GamePhase`, `FloorModifier`, `EnemyIntent`, `WeaponOnHit`, etc. `status-effects.ts` owns `GameCondition` + `ActiveEffect`. The SRD-shaped types (`Monster`, `Spell`, `Equipment`, `Class`, `Level`, `Feature`, `Condition`) live in `server/data/databases/types/`.
 
-## V1 Scope
-
-See `docs/V1-SPEC.md` for the game design spec, `docs/ENGINE-RULES.md` for shipped mechanics. Key constraints:
+## Scope
 
 - 6 classes: Fighter, Rogue, Wizard, Cleric, Ranger, Barbarian
 - Zone combat (melee/ranged/far), not grid
 - Level cap 10
-- Solo play only (multiplayer is v2)
-- Text/icon/token UI — no sprites, no character-specific art
-- CSS and Motion status effect animations on combat tokens ARE in scope
+- Solo play only
+- Text/icon/token UI — no sprites, no character-specific art; CSS and Motion animate combat feedback and conditions on the tokens
 - Damage types + resistances/immunities tracked; cantrip scaling tracked; concentration tracked
-
-## Data Source
-
-5e SRD (CC-BY-4.0), via the dnd5eapi.co dataset. See `docs/DATA-LICENSING.md`.
 
 ## UI Architecture
 
