@@ -16,6 +16,7 @@ V1 is feature-complete and plays end to end — engine, UI, polish, and balance 
 party-wipe/
 ├── README.md
 ├── SPRINT.md               ← Active tracker — source of truth for build state
+├── capture/                ← Playwright scripts for the demo footage, one per take (its README says how to run them)
 ├── TODO.md                 ← Frozen historical build checklist (points at SPRINT.md)
 ├── docs/
 │   ├── development.md      ← This file: structure, pipeline, architecture, conventions
@@ -98,7 +99,9 @@ Phase-driven full-screen flow, not a persistent dashboard. `GameProvider` holds 
 - `level-up` → `LevelUpScreen`
 - `game-over` → `GameOverScreen`
 
-A floating **HUD overlay layer** sits on top regardless of phase: `FloorChip`, `RoomModifiers` (the floor modifier, during combat), `InitiativeBar`, `GameLog`, `CombatFeedback`, `CombatOverlays`, `PhaseBanner`, `VictoryOverlay`, the animated `ActionBar`, and `InspectSheet`. Title (`page.tsx`) and draft (`draft/page.tsx`) are standalone pages; `/dev` jumps to any phase for testing.
+A floating **HUD overlay layer** sits on top regardless of phase: `FloorChip`, `RoomModifiers` (the floor modifier, during combat), `InitiativeBar`, `GameLog`, `CombatFeedback`, `CombatOverlays`, `PhaseBanner`, `VictoryOverlay`, the animated `ActionBar`, and `InspectSheet`. Every floating piece sits on one surface, `HUD_SURFACE` in `components/game/hud.ts`. Title (`page.tsx`) and draft (`draft/page.tsx`) are standalone pages; `/dev` jumps to any phase for testing.
+
+**Moving between screens.** Walking from one room to the next goes through black: `useFadeThrough` in `components/game/FadeThrough.tsx` fades a full-screen overlay down over `FADE_THROUGH_MS`, makes the change in the dark, and fades back up. It covers title to draft, draft to the first room, entering a room, and moving on to the next. Each page arrives out of black; a screen's own entrance starts halfway through the lift (`revealed`), and combat holds every turn until the lift has finished and `ARRIVAL_BEAT_MS` has passed (`useCombat`'s `live`). Swaps within a room, such as combat to loot, crossfade through `PhaseFade`.
 
 `/dev` also serves the demo captures. `?seed=<any>` makes every roll, room, encounter and drop repeat from that seed (`data/rng.ts` is the game's one source of randomness); `capture` hides the dev bars and lays the page out as the game page does; `phase=<id>` and `mod=<floor modifier id>` open straight onto a screen.
 
