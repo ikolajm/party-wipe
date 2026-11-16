@@ -1,0 +1,16 @@
+{
+  "$note": "Party Wipe's brand, as Loom's questionnaire answers. `npm run loom:sync` passes it to Loom via --answers, so src/styles/loom/ is reproducible from this repo. Secondary and accent are the values the earlier pipeline derived, written out because Loom no longer derives them.",
+  "projectName": "party-wipe",
+  "styleDirection": "bold",
+  "defaultMode": "dark",
+  "primary": "#DAA520",
+  "secondary": "#2e5bcc",
+  "accent": "#29d1a1",
+  "heading": "Cinzel",
+  "body": "JetBrains Mono",
+  "edges": "sharp",
+  "density": "compact",
+  "shadowDepth": "flat",
+  "typeScale": "compact",
+  "controlHeight": "standard"
+}

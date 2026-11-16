@@ -1,5 +1,12 @@
+/* Loom's layers sit between Tailwind's base and its utilities: above preflight,
+   so the type ramp is not reset on headings, and below the utilities, so
+   loom.base's button reset does not clear a bg-* or text-* class. */
+@layer theme, base, loom.reset, loom.tokens, loom.base, loom.components, components, utilities;
+
 @import "tailwindcss";
-@import "../tokens.css";
+@import "../styles/loom/tokens.css";
+@import "../styles/loom/loom.css";
+@import "../tailwind-theme.css";
 @import "../game-tokens.css";
 @import "./animations.css";
 @import "./title.css";

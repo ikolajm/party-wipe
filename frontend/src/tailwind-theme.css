@@ -1,0 +1,190 @@
+/**
+ * tailwind-theme.css — Tailwind's names for Loom's tokens
+ *
+ * Party Wipe's own file. Loom delivers the tokens and the class layer into
+ * styles/loom/; this maps Tailwind's theme namespaces onto them, so a class
+ * like bg-surface-2 or rounded-card reads the Loom value. Imported after
+ * styles/loom/ in globals.css.
+ */
+
+/* === Animation Keyframes === */
+@keyframes accordion-down {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-in-from-top {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slide-in-from-bottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slide-in-from-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-from-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* === Tailwind v4 Theme === */
+@theme inline {
+  /* Colors */
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+  --color-on-primary-fixed: var(--on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-secondary-fixed-dim: var(--secondary-fixed-dim);
+  --color-on-secondary-fixed: var(--on-secondary-fixed);
+  --color-on-secondary-fixed-variant: var(--on-secondary-fixed-variant);
+  --color-neutral: var(--neutral);
+  --color-on-neutral: var(--on-neutral);
+  --color-neutral-container: var(--neutral-container);
+  --color-on-neutral-container: var(--on-neutral-container);
+  --color-surface: var(--surface);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-on-surface-inverse: var(--on-surface-inverse);
+  --color-inverse-primary: var(--inverse-primary);
+  --color-scrim: var(--scrim);
+  --color-outline: var(--outline);
+  --color-outline-subtle: var(--outline-subtle);
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+  --color-success: var(--success);
+  --color-on-success: var(--on-success);
+  --color-success-container: var(--success-container);
+  --color-on-success-container: var(--on-success-container);
+  --color-warning: var(--warning);
+  --color-on-warning: var(--on-warning);
+  --color-warning-container: var(--warning-container);
+  --color-on-warning-container: var(--on-warning-container);
+  --color-info: var(--info);
+  --color-on-info: var(--on-info);
+  --color-info-container: var(--info-container);
+  --color-on-info-container: var(--on-info-container);
+  --color-on-color: var(--on-color);
+  --color-ring: var(--focus-ring-color);
+
+  /* Spacing */
+  --spacing-0: var(--space-0);
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --spacing-24: var(--space-24);
+
+  /* Border Radius */
+  --radius-0: var(--br-0);
+  --radius-1: var(--br-1);
+  --radius-2: var(--br-2);
+  --radius-3: var(--br-3);
+  --radius-4: var(--br-4);
+  --radius-5: var(--br-5);
+  --radius-6: var(--br-6);
+  --radius-7: var(--br-7);
+  --radius-8: var(--br-8);
+  --radius-9: var(--br-9);
+  --radius-999: var(--br-999);
+  --radius-component: var(--radius-component);
+  --radius-card: var(--radius-card);
+  --radius-input: var(--radius-input);
+  --radius-modal: var(--radius-modal);
+  --radius-pill: var(--radius-pill);
+
+  /* Component Heights */
+  --height-ch-0: var(--ch-0);
+  --height-ch-1: var(--ch-1);
+  --height-ch-2: var(--ch-2);
+  --height-ch-3: var(--ch-3);
+  --height-ch-4: var(--ch-4);
+  --height-ch-5: var(--ch-5);
+  --height-ch-6: var(--ch-6);
+  --height-ch-7: var(--ch-7);
+  --height-ch-8: var(--ch-8);
+  --height-ch-9: var(--ch-9);
+
+  /* Component Sizes (square) */
+  --size-ch-0: var(--ch-0);
+  --size-ch-1: var(--ch-1);
+  --size-ch-2: var(--ch-2);
+  --size-ch-3: var(--ch-3);
+  --size-ch-4: var(--ch-4);
+  --size-ch-5: var(--ch-5);
+  --size-ch-6: var(--ch-6);
+  --size-ch-7: var(--ch-7);
+  --size-ch-8: var(--ch-8);
+  --size-ch-9: var(--ch-9);
+
+  /* Icon Sizes */
+  --size-icon-0: var(--icon-0);
+  --size-icon-1: var(--icon-1);
+  --size-icon-2: var(--icon-2);
+  --size-icon-3: var(--icon-3);
+  --size-icon-4: var(--icon-4);
+
+  /* Shadows */
+  --shadow-0: var(--shadow-0);
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+
+  /* Animations */
+  --animate-accordion-down: accordion-down 200ms ease-out;
+  --animate-accordion-up: accordion-up 200ms ease-out;
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-fade-out: fade-out 150ms ease-out;
+  --animate-scale-in: scale-in 200ms ease-out;
+  --animate-slide-in-from-top: slide-in-from-top 200ms ease-out;
+  --animate-slide-in-from-bottom: slide-in-from-bottom 200ms ease-out;
+  --animate-slide-in-from-left: slide-in-from-left 200ms ease-out;
+  --animate-slide-in-from-right: slide-in-from-right 200ms ease-out;
+  --animate-spin: spin 1s linear infinite;
+}
