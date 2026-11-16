@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // Each route exports as its own <route>/index.html, which a static host
   // serves at /<route> without a rewrite.
   trailingSlash: true,
+  devIndicators: false,
 };
 
 export default nextConfig;

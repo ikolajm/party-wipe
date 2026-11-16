@@ -4,7 +4,7 @@
 
 A D&D 5e roguelike survival game. Solo party of 4 characters, zone-based combat, procedural dungeon rooms, loot, leveling. Game ends on TPK. Score tracks how far you got.
 
-Built as pipeline proof #2 — dark/fantasy brand generated via the jmi-hub design system pipeline. Status effect animations (CSS and Motion) on combat tokens are the design-chops showcase.
+Built as pipeline proof #2 — a dark/fantasy brand on the Loom design system. Status effect animations (CSS and Motion) on combat tokens are the design-chops showcase.
 
 ## Status
 
@@ -38,21 +38,22 @@ party-wipe/
 │           ├── 5e-seeder/      ← Transform raw SRD → complete-data
 │           └── misc/
 └── frontend/               ← The game — Next.js 16 + React 19 + Tailwind
-    ├── answers.json        ← Loom pipeline brand questionnaire answers
+    ├── loom-answers.json   ← The brand, as Loom questionnaire answers
     ├── scripts/
     │   └── generate-game-data.mjs  ← SRD complete-data → typed game data files
     └── src/
         ├── app/            ← Pages: page.tsx (title), draft/, game/, dev/
         ├── assets/         ← Source SVGs (class, monster, item, status, spell-school, room, ui, loot)
         ├── components/
-        │   ├── atoms/      ← Generated design-system atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
+        │   ├── atoms/      ← Design-system atoms (Accordion, Button, Sheet, Tabs) + GameIcon, Logo
         │   ├── molecules/  ← Game-specific composed components (StatRow, HealthBar, ZoneToken, …)
         │   ├── game/       ← Screen + HUD components (ZoneLayout, ActionBar, RoomPreview, …)
         │   └── providers/  ← GameProvider (game state), ThemeProvider
         ├── data/           ← Game data + pure logic (types, classes, generators, status-effects, …)
         ├── hooks/          ← Combat orchestration (useCombat + resolvers/enemy-turn/modifiers, useRest)
-        ├── game-tokens.css ← Game color layer over the design system tokens
-        └── tokens.css      ← Design system tokens
+        ├── styles/loom/    ← Loom's tokens and class layer, delivered by `npm run loom:sync` — never edited
+        ├── tailwind-theme.css ← Tailwind's theme names mapped onto Loom's tokens
+        └── game-tokens.css ← Game color layer over the design system tokens
 ```
 
 All game logic lives in `frontend/src/` — `data/` (pure functions, types, generated data, config) and `hooks/` (combat glue). There is no separate `engine/` package; the game is self-contained in `frontend/`.
@@ -97,15 +98,19 @@ Phase-driven full-screen flow, not a persistent dashboard. `GameProvider` holds 
 - `level-up` → `LevelUpScreen`
 - `game-over` → `GameOverScreen`
 
-A floating **HUD overlay layer** sits on top regardless of phase: floor/room chip, `InitiativeBar`, `GameLog`, `CombatFeedback`, `CombatOverlays`, `PhaseBanner`, `VictoryOverlay`, the animated `ActionBar`, and `InspectSheet`. Title (`page.tsx`) and draft (`draft/page.tsx`) are standalone pages; `/dev` jumps to any phase for testing.
+A floating **HUD overlay layer** sits on top regardless of phase: `FloorChip`, `RoomModifiers` (the floor modifier, during combat), `InitiativeBar`, `GameLog`, `CombatFeedback`, `CombatOverlays`, `PhaseBanner`, `VictoryOverlay`, the animated `ActionBar`, and `InspectSheet`. Title (`page.tsx`) and draft (`draft/page.tsx`) are standalone pages; `/dev` jumps to any phase for testing.
+
+`/dev` also serves the demo captures. `?seed=<any>` makes every roll, room, encounter and drop repeat from that seed (`data/rng.ts` is the game's one source of randomness); `capture` hides the dev bars and lays the page out as the game page does; `phase=<id>` and `mod=<floor modifier id>` open straight onto a screen.
 
 ## Design System
 
-Generated via the jmi-hub (Loom) pipeline. Brand: amber/gold primary (#DAA520), secondary #2e5bcc (auto-derived), accent #29d1a1 (teal). Cinzel headings, JetBrains Mono body, dark mode default. Sharp edges, compact density, flat shadows.
+Loom, consumed at the tokens tier: Loom's stylesheets, Party Wipe's own components. Brand in `frontend/loom-answers.json`: amber/gold primary (#DAA520), secondary #2e5bcc, accent #29d1a1 (teal). Cinzel headings, JetBrains Mono body, dark only. Sharp edges, compact density, flat shadows.
 
-- Tokens in `frontend/src/tokens.css` — use `var(--space-*)`, `var(--primary)`, `var(--font-heading)`, etc.
-- Typography classes: `text-display-*`, `text-title-*`, `text-body-*`, `text-label-*`
-- Generated atoms in `components/atoms/`, kept only where the game uses them; game-specific molecules in `components/molecules/` (project-owned, never regenerated)
+- `npm run loom:sync` (from `frontend/`, with the Loom repo beside this one at `../loom`) regenerates `src/styles/loom/` from the answers file. Change the brand there, never in the delivered stylesheets.
+- `app/globals.css` declares the cascade layer order before anything else: Loom's layers sit above Tailwind's base and below its utilities, so preflight does not reset the type ramp and Loom's button reset does not clear a `bg-*` or `text-*` class.
+- Use `var(--space-*)`, `var(--primary)`, `var(--font-heading)`, etc., or their Tailwind names from `tailwind-theme.css`
+- Typography classes from Loom's class layer: `text-display-*`, `text-title-*`, `text-body-*`, `text-label-*`
+- Atoms in `components/atoms/` came from the earlier pipeline and are project-owned now, since the tokens tier delivers no components; game-specific molecules in `components/molecules/`
 - Game-specific color layer (`data/game-colors.ts`) — damage types, spell schools, action types, rarity, status, resources, surfaces — extends the generated tokens
 - Hybrid icon system — generated `GameIcon` atom over a mix of pixel-art and Lucide source SVGs in `assets/` (class, monster, status, spell-school, room, item, loot, ui)
 
