@@ -6,6 +6,7 @@
  */
 
 import { rollD20, rollDice, statMod } from '@/data/dice';
+import { random } from '@/data/rng';
 import { spellMeta } from '@/data/spell-meta';
 import { proficiencyBonus } from '@/data/progression';
 import {
@@ -199,7 +200,7 @@ export function resolvePlayerAttack(
   if (weapon.onHit && damage > 0 && !isKill && !isImmune) {
     const oh = weapon.onHit;
     const triggerFired = oh.trigger === 'hit' || (oh.trigger === 'crit' && isCrit);
-    const chanceRoll = oh.chance ? Math.random() < oh.chance : true;
+    const chanceRoll = oh.chance ? random() < oh.chance : true;
 
     if (triggerFired && chanceRoll) {
       // Bonus damage vs type

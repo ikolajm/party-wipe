@@ -6,6 +6,7 @@
  */
 
 import type { FloorModifier } from './game-types';
+import { random } from './rng';
 
 export const FLOOR_MODIFIERS: FloorModifier[] = [
   {
@@ -53,5 +54,5 @@ export const FLOOR_MODIFIERS: FloorModifier[] = [
 /** Pick a random floor modifier. Floor 1 returns null. */
 export function pickFloorModifier(floor: number): FloorModifier | null {
   if (floor <= 1) return null;
-  return FLOOR_MODIFIERS[Math.floor(Math.random() * FLOOR_MODIFIERS.length)];
+  return FLOOR_MODIFIERS[Math.floor(random() * FLOOR_MODIFIERS.length)];
 }

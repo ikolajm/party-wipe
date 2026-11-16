@@ -5,8 +5,10 @@
  * Mechanical data (rolls, AC) shown in parentheses.
  */
 
+import { random } from './rng';
+
 function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(random() * arr.length)];
 }
 
 // ─── Verb Pools ─────────────────────────────────────────────
