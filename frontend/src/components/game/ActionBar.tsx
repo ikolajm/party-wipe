@@ -13,6 +13,10 @@ import { getConsumable } from '@/data/v1-roster';
 import { actionColors, resourceColors } from '@/data/game-colors';
 import type { Zone } from '@/data/game-types';
 import { HUD_SURFACE } from './hud';
+import { BANNER_MS } from './PhaseBanner';
+import { motion } from 'motion/react';
+
+const BAR_FADE_MS = 400;
 
 export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction, onMove, onEndTurn }: {
   onAttack: (targetId: string) => void;
@@ -49,7 +53,15 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
   const hasSubMenu = mode !== 'idle';
 
   return (
-    <div role="group" aria-label={`${character.name}'s turn`} className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-[min(90vw,680px)]">
+    // Fades in as the turn banner clears; the page keys it per character, so each turn fades anew.
+    <motion.div
+      role="group"
+      aria-label={`${character.name}'s turn`}
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-[min(90vw,680px)]"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: BAR_FADE_MS / 1000, delay: (BANNER_MS - BAR_FADE_MS) / 1000, ease: 'easeOut' }}
+    >
 
       {/* Selection panel — expands UPWARD */}
       {hasSubMenu && (
@@ -289,14 +301,7 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
         <ActionTile icon={<SkipForward className="size-6" />} label="End" color="var(--on-surface-variant)"
           onClick={() => { setMode('idle'); onEndTurn(); }} />
       </div>
-
-      {/* Turn indicator */}
-      {/* {!hasSubMenu && (
-        <span className="text-label-sm text-on-surface-variant bg-black/40 px-3 py-0.5 rounded-full">
-          {character.name}&apos;s turn
-        </span>
-      )} */}
-    </div>
+    </motion.div>
   );
 }
 

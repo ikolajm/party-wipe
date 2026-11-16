@@ -1,46 +1,41 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useGame } from '@/components/providers/GameProvider';
 
-type Phase = 'player' | 'enemy' | null;
+/** How long the turn banner stays up. The action bar fades in as it clears. */
+export const BANNER_MS = 1200;
 
+/** Names whose turn it is, at the start of every turn. */
 export function PhaseBanner() {
   const { state } = useGame();
-  const [banner, setBanner] = useState<Phase>(null);
-  const prevType = useRef<string | null>(null);
+  const [cleared, setCleared] = useState<string | null>(null);
+
+  const combat = state.phase === 'combat' ? state.combat : null;
+  const current = combat?.initiativeOrder[combat.currentTurnIndex];
+  const entity = !combat || !current ? undefined
+    : current.type === 'character'
+      ? state.party.find(c => c.id === current.id)
+      : combat.enemies.find(e => e.id === current.id);
+  const turnKey = combat ? `${combat.roundNumber}-${combat.currentTurnIndex}` : null;
 
   useEffect(() => {
-    if (!state.combat || state.phase !== 'combat') {
-      prevType.current = null;
-      return;
-    }
+    if (!turnKey) return;
+    const t = setTimeout(() => setCleared(turnKey), BANNER_MS);
+    return () => clearTimeout(t);
+  }, [turnKey]);
 
-    const current = state.combat.initiativeOrder[state.combat.currentTurnIndex];
-    if (!current) return;
-
-    const newType = current.type;
-
-    // Only show banner when ownership changes (or on first turn)
-    if (prevType.current !== null && prevType.current !== newType) {
-      setBanner(newType === 'character' ? 'player' : 'enemy');
-      setTimeout(() => setBanner(null), 1200);
-    } else if (prevType.current === null) {
-      // First turn of combat
-      setBanner(newType === 'character' ? 'player' : 'enemy');
-      setTimeout(() => setBanner(null), 1200);
-    }
-
-    prevType.current = newType;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on turn/round, not the whole combat object, so the banner fires per turn change only
-  }, [state.combat?.currentTurnIndex, state.combat?.roundNumber, state.phase]);
+  // A fallen combatant's turn is skipped at once, so it gets no banner.
+  const banner = entity && entity.isAlive && current && turnKey !== cleared
+    ? { key: turnKey, name: entity.name, side: current.type === 'character' ? 'party' as const : 'enemy' as const }
+    : null;
 
   return (
     <AnimatePresence>
       {banner && (
         <motion.div
-          key={banner}
+          key={banner.key}
           className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -49,14 +44,14 @@ export function PhaseBanner() {
         >
           <motion.span
             className={`font-heading text-[clamp(1.5rem,4vw,2.5rem)] uppercase tracking-widest ${
-              banner === 'player' ? 'text-primary' : 'text-error'
+              banner.side === 'party' ? 'text-primary' : 'text-error'
             }`}
-            initial={{ x: banner === 'player' ? -100 : 100, opacity: 0 }}
+            initial={{ x: banner.side === 'party' ? -100 : 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: banner === 'player' ? 100 : -100, opacity: 0 }}
+            exit={{ x: banner.side === 'party' ? 100 : -100, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
           >
-            {banner === 'player' ? 'Player Phase' : 'Enemy Phase'}
+            {banner.name}&rsquo;s turn
           </motion.span>
         </motion.div>
       )}
