@@ -11,14 +11,15 @@ import { monstersByCR, type MonsterTemplate } from './monster-pool';
 import { getFloorTier } from './encounter-config';
 import { V1_MONSTERS, V1_BOSSES } from './v1-roster';
 import { rollD20, statMod } from './dice';
+import { random } from './rng';
 import type { Enemy, CombatState, Character, CombatEntity, Zone } from './game-types';
 
 function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(random() * arr.length)];
 }
 
 function randBetween(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(random() * (max - min + 1)) + min;
 }
 
 /** Regular (non-boss) v1-roster monsters matching any CR in the pool. */
@@ -89,7 +90,7 @@ function pickMonsters(floor: number, roomType: 'combat' | 'elite_combat' | 'boss
     }
     // Optionally one add from the regular pool
     const addPool = getRegularMonstersForCRs(tier.crPool);
-    if (addPool.length > 0 && Math.random() < 0.5) {
+    if (addPool.length > 0 && random() < 0.5) {
       return [boss, pickRandom(addPool)];
     }
     return [boss];

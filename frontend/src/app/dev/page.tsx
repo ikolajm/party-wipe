@@ -8,7 +8,7 @@ import { classBuilds } from '@/data/classes';
 import { generateRoom } from '@/data/room-generator';
 import { generateEncounter } from '@/data/encounter-generator';
 import { generateLootChoices } from '@/data/loot-generator';
-import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet } from '@/components/game';
+import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
 import { LevelUpScreen } from '@/components/game/LevelUpScreen';
@@ -16,7 +16,7 @@ import { RestScreen } from '@/components/game/RestScreen';
 import { GameOverScreen } from '@/components/game/GameOverScreen';
 import { GlobalFeedbackOverlay } from '@/components/game/feedback';
 import { PhaseBanner } from '@/components/game/PhaseBanner';
-import type { Character, Enemy, Zone, GamePhase } from '@/data/game-types';
+import type { Character, Enemy, Zone, GamePhase, Room } from '@/data/game-types';
 import type { LootItem } from '@/data/loot-generator';
 import { statMod } from '@/data/dice';
 import { awardXP, applyLevelUp, XP_THRESHOLDS, type LevelUpResult } from '@/data/progression';
@@ -34,6 +34,8 @@ const PHASES: { id: GamePhase | 'room-preview-boss'; label: string }[] = [
   { id: 'game-over', label: 'Game Over' },
 ];
 
+const noSubscription = () => () => {};
+
 function DevHarness() {
   const router = useRouter();
   const { state, initParty, setPhase, setRoom, setCombat, addLog, updateCharacter, updateStats, setFloorModifier } = useGame();
@@ -45,6 +47,15 @@ function DevHarness() {
   const [levelUpResults, setLevelUpResults] = useState<LevelUpResult[]>([]);
   const { handleFullRest, handleQuickRest, handleTrain } = useRest();
 
+  // Capture mode: `?capture` lays the page out as the game page does, with the
+  // dev bars kept in the DOM for a script to click but not shown, and no dev lines in the log.
+  const capture = React.useSyncExternalStore(
+    noSubscription,
+    () => new URLSearchParams(window.location.search).has('capture'),
+    () => false,
+  );
+  const devLog = (message: string) => { if (!capture) addLog(message, 'system'); };
+
   // Init default party on first load
   React.useEffect(() => {
     if (state.party.length > 0) return;
@@ -53,7 +64,21 @@ function DevHarness() {
     if (builds.length === 4) initParty(builds as typeof classBuilds);
   }, [state.party.length, initParty]);
 
-  function jumpTo(phaseId: string) {
+  // `?mod=<floor modifier id>&phase=<phase id>` opens on that screen once the
+  // party is in, so each capture section is one URL that starts fresh from the seed.
+  const opened = React.useRef(false);
+  React.useEffect(() => {
+    if (opened.current || state.party.length === 0) return;
+    opened.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const mod = FLOOR_MODIFIERS.find(m => m.id === params.get('mod'));
+    if (mod) setFloorModifier(mod);
+    const phase = params.get('phase');
+    if (phase && PHASES.some(p => p.id === phase)) jumpTo(phase);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.party.length]);
+
+  function jumpTo(phaseId: string, enterRoom?: Room | null) {
     setActivePhase(phaseId);
 
     if (phaseId === 'room-preview') {
@@ -65,14 +90,17 @@ function DevHarness() {
       setRoom(room);
       setPhase('room-preview');
     } else if (phaseId === 'combat') {
-      const room = generateRoom(1, 1);
+      // Entering from a room preview fights that room, so the boss preview leads to the boss.
+      const room = enterRoom ?? generateRoom(1, 1);
       setRoom(room);
       const zoneMap: Record<string, Zone> = { fighter: 1, rogue: 1, barbarian: 1, ranger: 2, wizard: 3, cleric: 2 };
       state.party.forEach(char => updateCharacter(char.id, { zone: zoneMap[char.classIndex] || 2 }));
-      const encounter = generateEncounter(state.floor || 1, 'combat', state.party, 1);
+      const roomType = room.type === 'boss' || room.type === 'elite_combat' ? room.type : 'combat';
+      const initBonus = state.floorModifier?.id === 'echoing-halls' ? 5 : 0;
+      const encounter = generateEncounter(room.floor || 1, roomType, state.party, room.roomNumber, initBonus);
       setCombat(encounter);
       setPhase('combat');
-      addLog('Dev: Combat started.', 'system');
+      devLog('Dev: Combat started.');
     } else if (phaseId === 'loot') {
       const choices = generateLootChoices(state.floor || 1);
       setLootChoices(choices);
@@ -114,7 +142,7 @@ function DevHarness() {
       addLog(`Party gains ${xpTotal} XP (${xpEach} each).`, 'system');
     }
     updatedParty.forEach(c => updateCharacter(c.id, { xp: c.xp }));
-    addLog('Dev: Victory! Use nav to jump to next phase.', 'system');
+    devLog('Dev: Victory! Use nav to jump to next phase.');
     setPhase('room-preview');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.party]);
@@ -178,7 +206,7 @@ function DevHarness() {
     <div className="relative h-dvh bg-surface overflow-hidden">
 
       {/* ─── Dev Nav Bar ─────────────────────────────────── */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center gap-1 px-3 py-2 bg-black/80 backdrop-blur-sm overflow-x-auto">
+      <div className={`${capture ? 'hidden' : 'flex'} absolute top-0 left-0 right-0 z-50 items-center gap-1 px-3 py-2 bg-black/80 backdrop-blur-sm overflow-x-auto`}>
         <span className="text-label-sm text-primary font-semibold uppercase tracking-wider mr-2 shrink-0">DEV</span>
         {PHASES.map(p => (
           <button key={p.id} onClick={() => jumpTo(p.id)}
@@ -192,7 +220,7 @@ function DevHarness() {
 
       {/* ─── Dev Condition Injector (combat only) ──────── */}
       {state.phase === 'combat' && state.combat && (
-        <div className="absolute top-10 left-0 right-0 z-50 flex items-center gap-1 px-3 py-1.5 bg-black/70 backdrop-blur-sm overflow-x-auto">
+        <div className={`${capture ? 'hidden' : 'flex'} absolute top-10 left-0 right-0 z-50 items-center gap-1 px-3 py-1.5 bg-black/70 backdrop-blur-sm overflow-x-auto`}>
           <span className="text-label-sm text-error font-semibold uppercase tracking-wider mr-2 shrink-0">Inflict</span>
           {(['paralyzed', 'unconscious', 'restrained', 'poisoned', 'frightened', 'prone', 'burning', 'frozen', 'commanded', 'staggered', 'hunterMarked'] as GameCondition[]).map(cond => (
             <button key={cond} onClick={() => {
@@ -211,9 +239,9 @@ function DevHarness() {
               const { effects: newEffects, applied, reason } = applyCondition(state.combat!.activeEffects, effect);
               if (applied) {
                 setCombat({ ...state.combat!, activeEffects: newEffects });
-                addLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`, 'system');
+                devLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`);
               } else {
-                addLog(`DEV: ${target.name} already ${reason || 'affected'}`, 'system');
+                devLog(`DEV: ${target.name} already ${reason || 'affected'}`);
               }
             }}
               className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-error hover:bg-error/20 transition-colors"
@@ -234,9 +262,9 @@ function DevHarness() {
               const { effects: newEffects, applied, reason } = applyCondition(state.combat!.activeEffects, effect);
               if (applied) {
                 setCombat({ ...state.combat!, activeEffects: newEffects });
-                addLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`, 'system');
+                devLog(`DEV: Applied ${cond} to ${target.name}${reason === 'refreshed' ? ' (refreshed)' : ''}`);
               } else {
-                addLog(`DEV: ${target.name} already ${reason || 'affected'}`, 'system');
+                devLog(`DEV: ${target.name} already ${reason || 'affected'}`);
               }
             }}
               className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-primary hover:bg-primary/20 transition-colors"
@@ -246,7 +274,7 @@ function DevHarness() {
           ))}
           <button onClick={() => {
             setCombat({ ...state.combat!, activeEffects: [] });
-            addLog('DEV: Cleared all effects', 'system');
+            devLog('DEV: Cleared all effects');
           }} className="text-label-sm px-2 py-0.5 rounded-full shrink-0 text-on-surface-variant hover:bg-surface-2 transition-colors ml-auto">
             Clear All
           </button>
@@ -254,22 +282,25 @@ function DevHarness() {
       )}
 
       {/* ─── Dev Floor Modifier Selector ────────────────── */}
-      <div className="absolute top-[calc(2.25rem)] left-0 right-0 z-40 flex items-center gap-1 px-3 py-1 bg-black/60 backdrop-blur-sm overflow-x-auto">
+      <div className={`${capture ? 'hidden' : 'flex'} absolute top-[calc(2.25rem)] left-0 right-0 z-40 items-center gap-1 px-3 py-1 bg-black/60 backdrop-blur-sm overflow-x-auto`}>
         <span className="text-label-sm text-primary font-semibold uppercase tracking-wider mr-2 shrink-0">Floor Mod</span>
-        <button onClick={() => { setFloorModifier(null); addLog('DEV: Cleared floor modifier', 'system'); }}
+        <button onClick={() => { setFloorModifier(null); devLog('DEV: Cleared floor modifier'); }}
           className={`text-label-sm px-2 py-0.5 rounded-full shrink-0 transition-colors ${!state.floorModifier ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-2'}`}>
           None
         </button>
         {FLOOR_MODIFIERS.map(m => (
-          <button key={m.id} onClick={() => { setFloorModifier(m); addLog(`DEV: Set floor modifier — ${m.name}`, 'system'); }}
+          <button key={m.id} onClick={() => { setFloorModifier(m); devLog(`DEV: Set floor modifier — ${m.name}`); }}
             className={`text-label-sm px-2 py-0.5 rounded-full shrink-0 transition-colors ${state.floorModifier?.id === m.id ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-2'}`}>
             {m.name}
           </button>
         ))}
       </div>
 
+      {/* First after the dev bars so it is the first Tab stop on the game's own screen */}
+      <RoomModifiers className={capture ? 'top-3' : 'top-[84px]'} />
+
       {/* ─── Phase Content (offset for nav bar) ──────────── */}
-      <div className={`h-full ${state.phase === 'combat' ? 'pt-[72px]' : 'pt-10'}`}>
+      <div className={`h-full ${capture ? '' : state.phase === 'combat' ? 'pt-[72px]' : 'pt-10'}`}>
 
         {/* Combat */}
         {state.phase === 'combat' && state.combat && (
@@ -278,7 +309,7 @@ function DevHarness() {
 
         {/* Room Preview */}
         {state.phase === 'room-preview' && state.currentRoom && (
-          <RoomPreview key={`room-${state.currentRoom.roomNumber}`} room={state.currentRoom} floorModifier={state.floorModifier} onEnter={() => jumpTo('combat')} />
+          <RoomPreview key={`room-${state.currentRoom.roomNumber}`} room={state.currentRoom} floorModifier={state.floorModifier} onEnter={() => jumpTo('combat', state.currentRoom)} />
         )}
 
         {/* Loot */}
@@ -317,12 +348,7 @@ function DevHarness() {
       </div>
 
       {/* ─── HUD Overlays ────────────────────────────────── */}
-      <div className="absolute top-12 left-3 z-20">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm">
-          <span className="font-heading text-label-sm tracking-widest uppercase text-primary">Party Wipe</span>
-          <span className="text-label-sm text-on-surface-variant">F{state.floor} · R{state.roomNumber}</span>
-        </div>
-      </div>
+      <FloorChip className={capture ? 'top-3' : 'top-12'} />
 
       {state.combat && <InitiativeBar />}
       <GameLog />

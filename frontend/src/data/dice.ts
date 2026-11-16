@@ -2,8 +2,10 @@
  * Dice utilities for combat resolution.
  */
 
+import { random } from './rng';
+
 export function rollD20(): number {
-  return Math.floor(Math.random() * 20) + 1;
+  return Math.floor(random() * 20) + 1;
 }
 
 /** Roll a dice expression like "2d6+3", "1d4 + 1", or a flat number "1" */
@@ -20,7 +22,7 @@ export function rollDice(expression: string): number {
 
     let total = bonus;
     for (let i = 0; i < count; i++) {
-      total += Math.floor(Math.random() * sides) + 1;
+      total += Math.floor(random() * sides) + 1;
     }
     return total;
   }

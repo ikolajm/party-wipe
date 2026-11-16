@@ -12,6 +12,7 @@ import {
   type RosterWeapon, type RosterArmor, type RosterConsumable,
 } from './v1-roster';
 import type { RoomType } from './game-types';
+import { random } from './rng';
 
 export type LootItem = {
   index: string;
@@ -36,7 +37,7 @@ export type LootItem = {
 };
 
 function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(random() * arr.length)];
 }
 
 function getTierKey(floor: number): keyof typeof LOOT_TIERS {
@@ -120,7 +121,7 @@ function consumableToLoot(c: RosterConsumable): LootItem {
 /** Roll against drop rate for room type */
 export function shouldDropLoot(roomType: RoomType): boolean {
   const rate = dropRates[roomType as keyof typeof dropRates] ?? 0;
-  return Math.random() < rate;
+  return random() < rate;
 }
 
 /** Generate N distinct loot choices for the current floor */

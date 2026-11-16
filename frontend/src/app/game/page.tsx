@@ -12,7 +12,7 @@ import { awardXP, checkLevelUp, applyLevelUp, type LevelUpResult } from '@/data/
 import { useRest } from '@/hooks/useRest';
 import { pickFloorModifier } from '@/data/floor-modifiers';
 import { statMod } from '@/data/dice';
-import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet } from '@/components/game';
+import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
 import { LevelUpScreen } from '@/components/game/LevelUpScreen';
@@ -243,6 +243,9 @@ export default function GamePage() {
   return (
     <div className="relative h-dvh bg-surface overflow-hidden animate-[fade-in_0.5s_ease-out]">
 
+      {/* First in the DOM so it is the first Tab stop, as it is the top of the screen */}
+      <RoomModifiers />
+
       {/* ─── Combat ──────────────────────────────────────── */}
       {state.phase === 'combat' && state.combat && (
         <ZoneLayout onSelectTarget={handleSelectTarget} />
@@ -292,12 +295,7 @@ export default function GamePage() {
       )}
 
       {/* ─── HUD Overlays ────────────────────────────────── */}
-      <div className="absolute top-3 left-3 z-20">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm">
-          <span className="font-heading text-label-sm tracking-widest uppercase text-primary">Party Wipe</span>
-          <span className="text-label-sm text-on-surface-variant">F{state.floor} · R{state.roomNumber}</span>
-        </div>
-      </div>
+      <FloorChip />
 
       {state.combat && <InitiativeBar />}
       <GameLog />
