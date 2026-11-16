@@ -3,6 +3,7 @@
 import { useGame } from '@/components/providers/GameProvider';
 import { GameIcon } from '@/components/atoms/GameIcon';
 import { resourceColors } from '@/data/game-colors';
+import { HUD_SURFACE } from './hud';
 
 export function InitiativeBar() {
   const { state } = useGame();
@@ -10,7 +11,7 @@ export function InitiativeBar() {
   if (!combat) return null;
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-card bg-black/60 backdrop-blur-md border border-outline-subtle">
+    <div className={`absolute top-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-2 rounded-card ${HUD_SURFACE}`}>
       {combat.initiativeOrder.map((entity, i) => {
         const isActive = i === combat.currentTurnIndex;
         const isChar = entity.type === 'character';

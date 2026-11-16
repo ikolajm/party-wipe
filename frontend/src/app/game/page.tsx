@@ -13,7 +13,7 @@ import { useRest } from '@/hooks/useRest';
 import { useInspect } from '@/hooks/useInspect';
 import { pickFloorModifier } from '@/data/floor-modifiers';
 import { startingZone } from '@/data/zones';
-import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
+import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers, PhaseFade, useFadeThrough, useAfter, ARRIVAL_BEAT_MS } from '@/components/game';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
 import { LevelUpScreen } from '@/components/game/LevelUpScreen';
@@ -34,7 +34,11 @@ export default function GamePage() {
   const [lootChoices, setLootChoices] = useState<LootItem[]>([]);
   const [levelUpResults, setLevelUpResults] = useState<LevelUpResult[]>([]);
   const [victoryXp, setVictoryXp] = useState<number | null>(null);
-  const { handleFullRest, handleQuickRest, handleTrain } = useRest({ onComplete: advanceRoom });
+  const { overlay, through, settled, revealed } = useFadeThrough();
+  const live = useAfter(settled && state.phase === 'combat' && !!state.combat, ARRIVAL_BEAT_MS);
+  // `leave` clears the screen being walked away from, once it is dark.
+  const walkOn = (leave?: () => void) => through(() => { leave?.(); advanceRoom(); });
+  const { handleFullRest, handleQuickRest, handleTrain } = useRest({ onComplete: walkOn });
 
   // ─── Victory Handler ──────────────────────────────────────────
 
@@ -63,13 +67,14 @@ export default function GamePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.party, state.currentRoom, state.floor]);
 
-  const combat = useCombat({ onVictory: handleVictory });
+  const combat = useCombat({ onVictory: handleVictory, live });
 
   // ─── Level-Up ──────────────────────────────────────────────────
 
-  function checkAndQueueLevelUps(party: Character[]) {
+  function checkAndQueueLevelUps(party: Character[], leave?: () => void) {
     const eligible = party.filter(c => c.isAlive && checkLevelUp(c));
-    if (eligible.length === 0) { advanceRoom(); return; }
+    if (eligible.length === 0) { walkOn(leave); return; }
+    leave?.();
 
     // Apply all level-ups immediately, collect results for recap
     const results: LevelUpResult[] = [];
@@ -84,8 +89,7 @@ export default function GamePage() {
   }
 
   function handleLevelUpDismiss() {
-    setLevelUpResults([]);
-    advanceRoom();
+    walkOn(() => setLevelUpResults([]));
   }
 
   // ─── Room Generation ──────────────────────────────────────────
@@ -168,74 +172,88 @@ export default function GamePage() {
       addLog(result.message, 'loot');
     }
 
-    setLootChoices([]);
-    checkAndQueueLevelUps(state.party);
+    checkAndQueueLevelUps(state.party, () => setLootChoices([]));
   }
 
   function handleSkipLoot() {
-    setLootChoices([]);
-    checkAndQueueLevelUps(state.party);
+    checkAndQueueLevelUps(state.party, () => setLootChoices([]));
   }
 
   // ─── Render ───────────────────────────────────────────────────
 
   if (state.party.length === 0) {
-    return <div className="flex items-center justify-center min-h-dvh bg-surface"><p className="text-body-md text-on-surface-variant">Loading party...</p></div>;
+    return <div className="min-h-dvh bg-black" />;
   }
 
   return (
-    <div className="relative h-dvh bg-surface overflow-hidden animate-[fade-in_0.5s_ease-out]">
+    <div className="relative h-dvh bg-surface overflow-hidden">
 
       {/* First in the DOM so it is the first Tab stop, as it is the top of the screen */}
       <RoomModifiers />
 
-      {/* ─── Combat ──────────────────────────────────────── */}
-      {state.phase === 'combat' && state.combat && (
-        <ZoneLayout onSelectTarget={selectTarget} />
-      )}
+      <AnimatePresence custom={!settled}>
+        {/* ─── Combat ──────────────────────────────────────── */}
+        {state.phase === 'combat' && state.combat && (
+          <PhaseFade key="combat">
+            <ZoneLayout onSelectTarget={selectTarget} />
+          </PhaseFade>
+        )}
 
-      {/* ─── Room Preview ────────────────────────────────── */}
-      {state.phase === 'room-preview' && state.currentRoom && (
-        <RoomPreview key={`room-${state.currentRoom.roomNumber}`} room={state.currentRoom} floorModifier={state.floorModifier} onEnter={enterRoom} />
-      )}
+        {/* ─── Room Preview ────────────────────────────────── */}
+        {state.phase === 'room-preview' && state.currentRoom && (
+          <PhaseFade key={`room-${state.currentRoom.roomNumber}`}>
+            <RoomPreview room={state.currentRoom} floorModifier={state.floorModifier} onEnter={() => through(enterRoom)} ready={revealed} />
+          </PhaseFade>
+        )}
 
-      {state.phase === 'room-preview' && !state.currentRoom && (
-        <div className="flex items-center justify-center h-full text-on-surface-variant">Preparing next room...</div>
-      )}
+        {state.phase === 'room-preview' && !state.currentRoom && (
+          <PhaseFade key="preparing">
+            <div className="flex items-center justify-center h-full text-on-surface-variant">Preparing next room...</div>
+          </PhaseFade>
+        )}
 
-      {/* ─── Loot ────────────────────────────────────────── */}
-      {state.phase === 'loot' && lootChoices.length > 0 && (
-        <LootScreen
-          choices={lootChoices}
-          party={state.party}
-          onPick={handleLootPick}
-          onSkip={handleSkipLoot}
-        />
-      )}
+        {/* ─── Loot ────────────────────────────────────────── */}
+        {state.phase === 'loot' && lootChoices.length > 0 && (
+          <PhaseFade key="loot">
+            <LootScreen
+              choices={lootChoices}
+              party={state.party}
+              onPick={handleLootPick}
+              onSkip={handleSkipLoot}
+            />
+          </PhaseFade>
+        )}
 
-      {/* ─── Rest ────────────────────────────────────────── */}
-      {state.phase === 'rest' && (
-        <RestScreen
-          flavorText={state.currentRoom?.flavorText}
-          onFullRest={handleFullRest}
-          onQuickRest={handleQuickRest}
-          onTrain={handleTrain}
-        />
-      )}
+        {/* ─── Rest ────────────────────────────────────────── */}
+        {state.phase === 'rest' && (
+          <PhaseFade key="rest">
+            <RestScreen
+              flavorText={state.currentRoom?.flavorText}
+              onFullRest={handleFullRest}
+              onQuickRest={handleQuickRest}
+              onTrain={handleTrain}
+            />
+          </PhaseFade>
+        )}
 
-      {/* ─── Level-Up Recap ─────────────────────────────── */}
-      {state.phase === 'level-up' && levelUpResults.length > 0 && (
-        <LevelUpScreen results={levelUpResults} onContinue={handleLevelUpDismiss} />
-      )}
+        {/* ─── Level-Up Recap ─────────────────────────────── */}
+        {state.phase === 'level-up' && levelUpResults.length > 0 && (
+          <PhaseFade key="level-up">
+            <LevelUpScreen results={levelUpResults} onContinue={handleLevelUpDismiss} />
+          </PhaseFade>
+        )}
 
-      {/* ─── Game Over ───────────────────────────────────── */}
-      {state.phase === 'game-over' && (
-        <GameOverScreen
-          stats={state.stats}
-          floor={state.floor}
-          onRetry={() => router.push('/draft')}
-        />
-      )}
+        {/* ─── Game Over ───────────────────────────────────── */}
+        {state.phase === 'game-over' && (
+          <PhaseFade key="game-over">
+            <GameOverScreen
+              stats={state.stats}
+              floor={state.floor}
+              onRetry={() => router.push('/draft')}
+            />
+          </PhaseFade>
+        )}
+      </AnimatePresence>
 
       {/* ─── HUD Overlays ────────────────────────────────── */}
       <FloorChip />
@@ -243,13 +261,13 @@ export default function GamePage() {
       {state.combat && <InitiativeBar />}
       <GameLog />
       {state.phase === 'combat' && <GlobalFeedbackOverlay />}
-      {state.phase === 'combat' && <PhaseBanner />}
+      {live && <PhaseBanner />}
       <AnimatePresence>
         {victoryXp !== null && <VictoryOverlay xpGained={victoryXp} />}
       </AnimatePresence>
 
       <AnimatePresence>
-      {state.phase === 'combat' && combat.isPlayerTurn && combat.activeCharacter && (
+      {live && combat.isPlayerTurn && combat.activeCharacter && (
         <motion.div
           key="action-bar"
           initial={{ y: 40, opacity: 0 }}
@@ -271,6 +289,7 @@ export default function GamePage() {
       </AnimatePresence>
 
       <InspectSheet inspecting={inspecting} onClose={closeInspect} />
+      {overlay}
     </div>
   );
 }

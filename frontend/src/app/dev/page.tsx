@@ -10,7 +10,8 @@ import { encounterForRoom } from '@/data/encounter-generator';
 import { generateLootChoices, applyLootItem } from '@/data/loot-generator';
 import { startingZone } from '@/data/zones';
 import { useInspect } from '@/hooks/useInspect';
-import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers } from '@/components/game';
+import { InitiativeBar, ZoneLayout, ActionBar, GameLog, InspectSheet, FloorChip, RoomModifiers, PhaseFade, useFadeThrough, useAfter, ARRIVAL_BEAT_MS } from '@/components/game';
+import { AnimatePresence } from 'motion/react';
 import { RoomPreview } from '@/components/game/RoomPreview';
 import { LootScreen } from '@/components/game/LootScreen';
 import { LevelUpScreen } from '@/components/game/LevelUpScreen';
@@ -46,6 +47,8 @@ function DevHarness() {
   const combatState = state.combat;
   const [activePhase, setActivePhase] = useState<string>('room-preview');
   const { inspecting, selectTarget, closeInspect } = useInspect();
+  const { overlay, through, settled, revealed } = useFadeThrough();
+  const live = useAfter(settled && state.phase === 'combat' && !!state.combat, ARRIVAL_BEAT_MS);
   const [lootChoices, setLootChoices] = useState<LootItem[]>([]);
   const [levelUpResults, setLevelUpResults] = useState<LevelUpResult[]>([]);
   const { handleFullRest, handleQuickRest, handleTrain } = useRest();
@@ -150,7 +153,7 @@ function DevHarness() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.party]);
 
-  const combat = useCombat({ onVictory: handleVictory });
+  const combat = useCombat({ onVictory: handleVictory, live });
 
   function handleLootPick(item: LootItem, charId: string) {
     const char = state.party.find(c => c.id === charId);
@@ -169,7 +172,7 @@ function DevHarness() {
 
 
   if (state.party.length === 0) {
-    return <div className="flex items-center justify-center min-h-dvh bg-surface"><p className="text-body-md text-on-surface-variant">Loading...</p></div>;
+    return <div className="min-h-dvh bg-black" />;
   }
 
   return (
@@ -256,50 +259,65 @@ function DevHarness() {
 
       {/* ─── Phase Content (offset for nav bar) ──────────── */}
       <div className={`h-full ${capture ? '' : state.phase === 'combat' ? 'pt-[72px]' : 'pt-10'}`}>
+        <div className="relative h-full">
+          <AnimatePresence custom={!settled}>
+            {/* Combat */}
+            {state.phase === 'combat' && combatState && (
+              <PhaseFade key="combat">
+                <ZoneLayout onSelectTarget={selectTarget} />
+              </PhaseFade>
+            )}
 
-        {/* Combat */}
-        {state.phase === 'combat' && combatState && (
-          <ZoneLayout onSelectTarget={selectTarget} />
-        )}
+            {/* Room Preview */}
+            {state.phase === 'room-preview' && state.currentRoom && (
+              <PhaseFade key={`room-${state.currentRoom.roomNumber}`}>
+                <RoomPreview room={state.currentRoom} floorModifier={state.floorModifier} onEnter={() => through(() => jumpTo('combat', state.currentRoom))} ready={revealed} />
+              </PhaseFade>
+            )}
 
-        {/* Room Preview */}
-        {state.phase === 'room-preview' && state.currentRoom && (
-          <RoomPreview key={`room-${state.currentRoom.roomNumber}`} room={state.currentRoom} floorModifier={state.floorModifier} onEnter={() => jumpTo('combat', state.currentRoom)} />
-        )}
+            {/* Loot */}
+            {state.phase === 'loot' && lootChoices.length > 0 && (
+              <PhaseFade key="loot">
+                <LootScreen
+                  choices={lootChoices}
+                  party={state.party}
+                  onPick={handleLootPick}
+                  onSkip={() => { setLootChoices([]); }}
+                />
+              </PhaseFade>
+            )}
 
-        {/* Loot */}
-        {state.phase === 'loot' && lootChoices.length > 0 && (
-          <LootScreen
-            choices={lootChoices}
-            party={state.party}
-            onPick={handleLootPick}
-            onSkip={() => { setLootChoices([]); }}
-          />
-        )}
+            {/* Rest */}
+            {state.phase === 'rest' && (
+              <PhaseFade key="rest">
+                <RestScreen
+                  flavorText={state.currentRoom?.flavorText}
+                  onFullRest={handleFullRest}
+                  onQuickRest={handleQuickRest}
+                  onTrain={handleTrain}
+                />
+              </PhaseFade>
+            )}
 
-        {/* Rest */}
-        {state.phase === 'rest' && (
-          <RestScreen
-            flavorText={state.currentRoom?.flavorText}
-            onFullRest={handleFullRest}
-            onQuickRest={handleQuickRest}
-            onTrain={handleTrain}
-          />
-        )}
+            {/* Level-Up Recap */}
+            {state.phase === 'level-up' && levelUpResults.length > 0 && (
+              <PhaseFade key="level-up">
+                <LevelUpScreen results={levelUpResults} onContinue={handleLevelUpDismiss} />
+              </PhaseFade>
+            )}
 
-        {/* Level-Up Recap */}
-        {state.phase === 'level-up' && levelUpResults.length > 0 && (
-          <LevelUpScreen results={levelUpResults} onContinue={handleLevelUpDismiss} />
-        )}
-
-        {/* Game Over */}
-        {state.phase === 'game-over' && (
-          <GameOverScreen
-            stats={state.stats}
-            floor={state.floor}
-            onRetry={() => router.push('/draft')}
-          />
-        )}
+            {/* Game Over */}
+            {state.phase === 'game-over' && (
+              <PhaseFade key="game-over">
+                <GameOverScreen
+                  stats={state.stats}
+                  floor={state.floor}
+                  onRetry={() => router.push('/draft')}
+                />
+              </PhaseFade>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* ─── HUD Overlays ────────────────────────────────── */}
@@ -308,9 +326,9 @@ function DevHarness() {
       {combatState && <InitiativeBar />}
       <GameLog />
       {state.phase === 'combat' && <GlobalFeedbackOverlay />}
-      {state.phase === 'combat' && <PhaseBanner />}
+      {live && <PhaseBanner />}
 
-      {state.phase === 'combat' && combat.isPlayerTurn && combat.activeCharacter && (
+      {live && combat.isPlayerTurn && combat.activeCharacter && (
         <ActionBar
           onAttack={combat.handleAttack}
           onCast={combat.handleCast}
@@ -323,6 +341,7 @@ function DevHarness() {
       )}
 
       <InspectSheet inspecting={inspecting} onClose={closeInspect} />
+      {overlay}
     </div>
   );
 }

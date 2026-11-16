@@ -75,8 +75,3 @@
   text-transform: uppercase;
   color: var(--primary);
 }
-
-/* Exit transition */
-.ts-exit {
-  animation: anim-fade-out 0.5s ease-out forwards;
-}

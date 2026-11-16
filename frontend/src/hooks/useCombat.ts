@@ -37,10 +37,13 @@ const SCROLL_SC: NonNullable<Character['spellcasting']> = {
 
 interface UseCombatOptions {
   onVictory?: (defeatedEnemies: Enemy[]) => void;
+  /** False holds every turn until the screen has arrived; defaults to true. */
+  live?: boolean;
 }
 
 export function useCombat(options: UseCombatOptions = {}) {
   const { state, setCombat, setPhase, addLog, updateCharacter, updateStats } = useGame();
+  const live = options.live ?? true;
 
   const currentEntity = state.combat?.initiativeOrder[state.combat.currentTurnIndex];
   const isPlayerTurn = currentEntity?.type === 'character';
@@ -165,7 +168,7 @@ export function useCombat(options: UseCombatOptions = {}) {
   // ─── Player Turn Start: DoT + Status Check ─────────────────
 
   useEffect(() => {
-    if (!state.combat || state.phase !== 'combat') return;
+    if (!live || !state.combat || state.phase !== 'combat') return;
     const current = state.combat.initiativeOrder[state.combat.currentTurnIndex];
     if (!current || current.type !== 'character') return;
     const char = state.party.find(c => c.id === current.id);
@@ -221,12 +224,12 @@ export function useCombat(options: UseCombatOptions = {}) {
     }, 600);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.combat?.currentTurnIndex, state.combat?.roundNumber]);
+  }, [live, state.combat?.currentTurnIndex, state.combat?.roundNumber]);
 
   // ─── Enemy Turn Effect ──────────────────────────────────────
 
   useEffect(() => {
-    if (!state.combat || state.phase !== 'combat') return;
+    if (!live || !state.combat || state.phase !== 'combat') return;
     const current = state.combat.initiativeOrder[state.combat.currentTurnIndex];
     if (!current || current.type !== 'enemy') return;
 
@@ -247,7 +250,7 @@ export function useCombat(options: UseCombatOptions = {}) {
     });
     return () => { abort.cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.combat?.currentTurnIndex, state.combat?.roundNumber]);
+  }, [live, state.combat?.currentTurnIndex, state.combat?.roundNumber]);
 
   // ─── Player Actions ────────────────────────────────────────
 

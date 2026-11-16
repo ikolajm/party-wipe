@@ -1,21 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/atoms/Logo';
 import { Button } from '@/components/atoms/Button';
+import { useFadeThrough } from '@/components/game';
 
 export default function TitleScreen() {
   const router = useRouter();
-  const [exiting, setExiting] = useState(false);
-
-  function handleStart() {
-    setExiting(true);
-    setTimeout(() => router.push('/draft'), 500);
-  }
+  // The title plays its own intro out of black, so the overlay starts clear.
+  const { overlay, leave } = useFadeThrough({ startDark: false });
 
   return (
-    <div className={`ts-screen ${exiting ? 'ts-exit' : ''}`}>
+    <div className="ts-screen">
       {/* Logo with pixelation */}
       <div className="ts-logo">
         <Logo size={120} fill="var(--primary)" className="ts-logo-img" />
@@ -39,8 +35,9 @@ export default function TitleScreen() {
 
       {/* Start button */}
       <div className="ts-button">
-        <Button size="lg" onClick={handleStart} disabled={exiting}>Begin</Button>
+        <Button size="lg" onClick={() => leave(() => router.push('/draft'))}>Begin</Button>
       </div>
+      {overlay}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { hasBonusActions, getBonusActions } from '@/data/bonus-actions';
 import { getConsumable } from '@/data/v1-roster';
 import { actionColors, resourceColors } from '@/data/game-colors';
 import type { Zone } from '@/data/game-types';
+import { HUD_SURFACE } from './hud';
 
 export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction, onMove, onEndTurn }: {
   onAttack: (targetId: string) => void;
@@ -48,11 +49,11 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
   const hasSubMenu = mode !== 'idle';
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-[min(90vw,680px)]">
+    <div role="group" aria-label={`${character.name}'s turn`} className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-[min(90vw,680px)]">
 
       {/* Selection panel — expands UPWARD */}
       {hasSubMenu && (
-        <div className="w-full rounded-card bg-black/70 backdrop-blur-md border border-outline-subtle p-3 max-h-[240px] overflow-y-auto animate-[fade-in_0.15s_ease-out]">
+        <div className={`w-full rounded-card ${HUD_SURFACE} p-3 max-h-[240px] overflow-y-auto animate-[fade-in_0.15s_ease-out]`}>
           {mode === 'attack-target' && (
             <PanelSection label="Select Target">
               {reachableEnemies.length === 0 && <EmptyHint>No enemies in range — try moving first</EmptyHint>}
@@ -249,7 +250,7 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
       </div>
 
       {/* Action tiles row */}
-      <div className="flex items-center gap-1 rounded-card bg-black/70 backdrop-blur-md border border-outline-subtle/50 px-3 py-2">
+      <div className={`flex items-center gap-1 rounded-card ${HUD_SURFACE} px-3 py-2`}>
         <ActionTile icon={<Swords className="size-6" />} label="Attack" color={actionColors.action}
           active={mode === 'attack-target'} disabled={resources.actionsRemaining <= 0}
           onClick={() => setMode(mode === 'attack-target' ? 'idle' : 'attack-target')} />
@@ -285,11 +286,8 @@ export function ActionBar({ onAttack, onCast, onDefend, onUseItem, onBonusAction
         {/* Separator + End Turn */}
         <div className="w-px h-8 bg-outline-subtle mx-1" />
 
-        <button onClick={() => { setMode('idle'); onEndTurn(); }}
-          className="flex flex-col items-center gap-1 px-4 py-2.5 rounded-component bg-white/5 hover:bg-white/10 cursor-pointer transition-all hover:-translate-y-0.5 min-w-[60px]">
-          <SkipForward className="size-6 text-on-surface-variant" />
-          <span className="text-label-sm font-medium text-on-surface-variant">End</span>
-        </button>
+        <ActionTile icon={<SkipForward className="size-6" />} label="End" color="var(--on-surface-variant)"
+          onClick={() => { setMode('idle'); onEndTurn(); }} />
       </div>
 
       {/* Turn indicator */}
@@ -324,7 +322,7 @@ function ActionTile({ icon, label, color, active, disabled, onClick }: {
 
 function PanelSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div role="group" aria-label={label} className="flex flex-col gap-2">
       <span className="text-label-sm uppercase tracking-widest font-semibold text-on-surface-variant">{label}</span>
       {children}
     </div>

@@ -17,6 +17,7 @@ import { CharacterInspect } from '@/components/game/CharacterInspect';
 import { classColor } from '@/data/class-visuals';
 import { tint } from '@/data/color-utils';
 import { motion } from 'motion/react';
+import { useFadeThrough } from '@/components/game';
 
 function getHp(build: ClassBuild) {
   return build.hitDie + statMod(build.stats.con);
@@ -27,7 +28,7 @@ export default function DraftPage() {
   const [party, setParty] = useState<(ClassBuild | null)[]>([null, null, null, null]);
   const [inspecting, setInspecting] = useState<ClassBuild | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [exiting, setExiting] = useState(false);
+  const { overlay, leave } = useFadeThrough();
 
   const filledCount = party.filter(Boolean).length;
   const partyFull = filledCount === 4;
@@ -58,12 +59,11 @@ export default function DraftPage() {
     const selected = party.filter(Boolean) as ClassBuild[];
     if (selected.length !== 4) return;
     sessionStorage.setItem('party-wipe-draft', JSON.stringify(selected.map(b => b.index)));
-    setExiting(true);
-    setTimeout(() => router.push('/game'), 600);
+    leave(() => router.push('/game'));
   }
 
   return (
-    <div className={`flex flex-col min-h-dvh bg-surface px-6 py-8 gap-8 transition-opacity duration-500 ${exiting ? 'opacity-0' : 'animate-[fade-in_0.5s_ease-out]'}`}>
+    <div className="flex flex-col min-h-dvh bg-surface px-6 py-8 gap-8">
 
       {/* Header */}
       <header className="text-center flex flex-col items-center gap-1">
@@ -197,6 +197,7 @@ export default function DraftPage() {
           )}
         </SheetContent>
       </Sheet>
+      {overlay}
     </div>
   );
 }

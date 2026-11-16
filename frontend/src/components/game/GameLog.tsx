@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGame } from '@/components/providers/GameProvider';
-import { Scroll, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Scroll, ChevronUp } from 'lucide-react';
+import { motion } from 'motion/react';
+import { HUD_SURFACE } from './hud';
 import { DAMAGE_VISUALS } from '@/data/damage-visuals';
 import { CONDITION_VISUALS } from '@/data/condition-visuals';
 
@@ -85,72 +86,46 @@ export function GameLog() {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [state.log.length, expanded]);
 
+  const shown = expanded ? allLogs : recentLogs;
+
   return (
-    <div className="absolute bottom-4 left-4 z-20">
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            className="mb-2 w-[340px] max-h-[380px] flex flex-col rounded-card bg-surface-1/95 backdrop-blur-md border border-outline-subtle overflow-hidden"
-            initial={{ opacity: 0, y: 10, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.97 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-3 py-2 border-b border-outline-subtle/50">
-              <span className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-widest">Combat Log</span>
-              <button onClick={() => setExpanded(false)} aria-label="Close the combat log" className="text-on-surface-variant hover:text-on-surface cursor-pointer bg-transparent border-none p-1 rounded-component hover:bg-surface-2 transition-colors">
-                <X className="size-4" />
-              </button>
-            </div>
-
-            {/* Scrollable log */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-2 max-h-[320px]">
-              <div className="flex flex-col">
-                {allLogs.map((entry) => {
-                  const indicator = TYPE_INDICATOR[entry.type] || TYPE_INDICATOR.combat;
-                  const isIndented = entry.message.startsWith('  ');
-                  return (
-                    <div key={entry.id} className={`flex items-start gap-2 px-1 py-1 ${isIndented ? 'pl-5' : ''}`}>
-                      {!isIndented && <span className={`size-1.5 rounded-full shrink-0 mt-1.5 ${indicator.dot}`} />}
-                      <span className={`text-label-sm leading-relaxed ${indicator.color}`}>
-                        {colorizeLog(entry.message.trim(), partyNames, enemyNames)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
+    <motion.div
+      layout
+      transition={{ duration: 0.2 }}
+      // 272px keeps it clear of the action bar, which starts 300px in at 1280 wide.
+      className={`absolute bottom-4 left-4 z-20 w-[272px] flex flex-col rounded-card overflow-hidden ${HUD_SURFACE}`}
+    >
+      {/* Header — the whole row opens and closes the full log */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}
+        className="flex items-center gap-2 px-3 py-2 border-b border-outline-subtle/50 bg-transparent cursor-pointer text-left hover:bg-white/5 transition-colors"
+      >
+        <Scroll className="size-3.5 text-on-surface-variant" />
+        <span className="text-label-sm font-semibold uppercase tracking-widest text-on-surface-variant">Combat log</span>
+        {state.log.length > 0 && (
+          <span className="text-label-sm tabular-nums text-on-surface-variant opacity-60">{state.log.length}</span>
         )}
-      </AnimatePresence>
+        <ChevronUp className={`size-4 ml-auto text-on-surface-variant transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
 
-      {/* Compact state — recent entries + FAB */}
-      {!expanded && (
-        <div className="flex flex-col gap-1 items-start">
-          <div className="flex flex-col gap-0.5 max-w-[280px]">
-            {recentLogs.map((entry) => {
-              const indicator = TYPE_INDICATOR[entry.type] || TYPE_INDICATOR.combat;
-              return (
-                <span key={entry.id} className={`text-label-sm leading-tight opacity-60 ${indicator.color}`}>
-                  {colorizeLog(entry.message, partyNames, enemyNames)}
+      {/* Entries — the last three, or the full log scrolling */}
+      <div ref={scrollRef} className={`px-2 py-2 ${expanded ? 'max-h-[320px] overflow-y-auto' : ''}`}>
+        <div className="flex flex-col">
+          {shown.map((entry) => {
+            const indicator = TYPE_INDICATOR[entry.type] || TYPE_INDICATOR.combat;
+            const isIndented = expanded && entry.message.startsWith('  ');
+            return (
+              <div key={entry.id} className={`flex items-start gap-2 px-1 py-0.5 ${isIndented ? 'pl-5' : ''}`}>
+                {!isIndented && <span className={`size-1.5 rounded-full shrink-0 mt-1.5 ${indicator.dot}`} />}
+                <span className={`text-label-sm leading-relaxed ${indicator.color}`}>
+                  {colorizeLog(entry.message.trim(), partyNames, enemyNames)}
                 </span>
-              );
-            })}
-          </div>
-
-          <button
-            onClick={() => setExpanded(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-1/80 backdrop-blur-sm border border-outline-subtle/50 hover:bg-surface-2 cursor-pointer transition-all"
-          >
-            <Scroll className="size-3.5 text-on-surface-variant" />
-            <span className="text-label-sm text-on-surface-variant">Log</span>
-            {state.log.length > 0 && (
-              <span className="text-label-sm tabular-nums text-on-surface-variant opacity-50">{state.log.length}</span>
-            )}
-          </button>
+              </div>
+            );
+          })}
         </div>
-      )}
-    </div>
+      </div>
+    </motion.div>
   );
 }

@@ -5,6 +5,7 @@ import { useGame } from '@/components/providers/GameProvider';
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from '@/components/atoms/Accordion';
+import { HUD_SURFACE } from './hud';
 
 /**
  * The modifiers in effect during combat, top right, opposite the floor chip.
@@ -17,7 +18,7 @@ export function RoomModifiers({ className = 'top-3' }: { className?: string }) {
   if (modifiers.length === 0) return null;
 
   return (
-    <div className={`absolute ${className} right-3 z-20 w-64 flex flex-col gap-2 px-3 py-2 rounded-card bg-black/50 backdrop-blur-sm border border-outline-subtle`}>
+    <div className={`absolute ${className} right-3 z-20 w-64 flex flex-col gap-2 px-3 py-2 rounded-card ${HUD_SURFACE}`}>
       <span className="text-label-sm font-semibold uppercase tracking-widest text-on-surface-variant">Floor modifiers</span>
       <Accordion
         type="single"
